@@ -1,0 +1,43 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 222 47% 6%;
+  --foreground: 210 40% 98%;
+  --border: 215 30% 22%;
+  --input: 215 30% 18%;
+  --ring: 40 82% 55%;
+  --primary: 40 82% 55%;
+  --primary-foreground: 220 43% 8%;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+  background: #020813;
+}
+
+body {
+  color: hsl(var(--foreground));
+}
+
+.truck-scene {
+  background:
+    radial-gradient(circle at 40% 45%, rgba(255, 222, 150, 0.2), transparent 9%),
+    radial-gradient(circle at 22% 49%, rgba(246, 188, 81, 0.28), transparent 5%),
+    linear-gradient(115deg, rgba(2, 8, 19, 0.1), rgba(2, 8, 19, 0.76) 56%, rgba(2, 8, 19, 0.97)),
+    linear-gradient(160deg, #182330 0%, #0b1522 45%, #030812 100%);
+}
+
+.road-line {
+  transform: perspective(420px) rotateX(62deg) rotateZ(-8deg);
+}
+
+.truck-body {
+  clip-path: polygon(0 32%, 21% 24%, 38% 34%, 52% 34%, 61% 16%, 88% 20%, 100% 46%, 96% 74%, 6% 74%);
+}
