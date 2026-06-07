@@ -26,18 +26,20 @@ body {
   color: hsl(var(--foreground));
 }
 
-.truck-scene {
+.login-scene {
   background:
-    radial-gradient(circle at 40% 45%, rgba(255, 222, 150, 0.2), transparent 9%),
-    radial-gradient(circle at 22% 49%, rgba(246, 188, 81, 0.28), transparent 5%),
-    linear-gradient(115deg, rgba(2, 8, 19, 0.1), rgba(2, 8, 19, 0.76) 56%, rgba(2, 8, 19, 0.97)),
-    linear-gradient(160deg, #182330 0%, #0b1522 45%, #030812 100%);
+    linear-gradient(105deg, rgba(6, 15, 28, 0.98) 0%, rgba(9, 20, 34, 0.96) 45%, rgba(3, 8, 18, 0.99) 100%),
+    linear-gradient(160deg, #101a28 0%, #06111f 48%, #020813 100%);
 }
 
 .road-line {
   transform: perspective(420px) rotateX(62deg) rotateZ(-8deg);
 }
 
-.truck-body {
-  clip-path: polygon(0 32%, 21% 24%, 38% 34%, 52% 34%, 61% 16%, 88% 20%, 100% 46%, 96% 74%, 6% 74%);
+
+.map-grid {
+  background-image:
+    linear-gradient(rgba(37, 99, 235, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(37, 99, 235, 0.08) 1px, transparent 1px);
+  background-size: 34px 34px;
 }

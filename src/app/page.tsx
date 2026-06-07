@@ -1,4 +1,6 @@
-import { Crown, Eye, Headphones, ShieldCheck, Truck } from "lucide-react";
+import Link from "next/link";
+import { Eye, Headphones, ShieldCheck, Truck } from "lucide-react";
+import { Brand } from "@/components/brand";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -6,48 +8,41 @@ import { Input } from "@/components/ui/input";
 const roles = [
   {
     name: "Dyspozytor",
+    href: "/dispatcher",
     icon: Headphones,
     color: "text-sky-400",
     glow: "bg-sky-400/10",
   },
   {
     name: "Kierowca",
+    href: "/driver",
     icon: Truck,
     color: "text-emerald-400",
     glow: "bg-emerald-400/10",
   },
   {
     name: "Administrator",
+    href: "/admin",
     icon: ShieldCheck,
     color: "text-violet-400",
     glow: "bg-violet-400/10",
   },
 ];
 
-function Brand() {
-  return (
-    <div className="flex items-center gap-3">
-      <Crown className="h-12 w-12 text-amber-400" strokeWidth={1.7} />
-      <div className="leading-none">
-        <p className="text-4xl font-black tracking-[0.08em] text-white">KING</p>
-        <p className="mt-1 text-sm font-bold tracking-[0.18em] text-white/90">DELIVERY TRACKER</p>
-      </div>
-    </div>
-  );
-}
-
-function TruckIllustration() {
+function TruckBackdrop() {
   return (
     <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
-      <div className="absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-black/70 to-transparent" />
-      <div className="absolute bottom-20 left-8 h-32 w-[28rem] max-w-[82vw] opacity-80 truck-body bg-gradient-to-r from-slate-950 via-slate-800 to-slate-950 shadow-2xl shadow-black" />
-      <div className="absolute bottom-20 left-16 h-10 w-28 rounded-t-xl bg-slate-700/60 blur-[1px]" />
-      <div className="absolute bottom-18 left-16 h-8 w-8 rounded-full border-4 border-slate-500 bg-slate-950 shadow-lg" />
-      <div className="absolute bottom-18 left-80 h-8 w-8 rounded-full border-4 border-slate-500 bg-slate-950 shadow-lg" />
-      <div className="absolute bottom-32 left-72 h-2 w-24 rounded-full bg-amber-200 blur-sm" />
-      <div className="road-line absolute -bottom-12 left-16 h-48 w-3 rounded-full bg-white/70 blur-[1px]" />
-      <div className="road-line absolute -bottom-6 left-52 h-44 w-2 rounded-full bg-white/35 blur-[1px]" />
-      <div className="absolute bottom-0 right-0 h-72 w-2/3 bg-gradient-to-tl from-slate-950/70 via-transparent to-transparent" />
+      <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/75 via-black/25 to-transparent" />
+      <div className="absolute bottom-20 left-10 hidden h-44 w-[34rem] max-w-[48vw] opacity-55 lg:block">
+        <div className="absolute bottom-10 left-0 h-20 w-48 rounded-t-[2rem] bg-slate-950/95 shadow-2xl shadow-black" />
+        <div className="absolute bottom-10 left-44 h-28 w-80 rounded-r-xl bg-gradient-to-r from-slate-900 to-slate-950 shadow-2xl shadow-black" />
+        <div className="absolute bottom-20 left-16 h-12 w-20 rounded-t-xl bg-slate-700/70" />
+        <div className="absolute bottom-6 left-12 h-14 w-14 rounded-full border-[10px] border-slate-700 bg-slate-950" />
+        <div className="absolute bottom-6 left-72 h-14 w-14 rounded-full border-[10px] border-slate-700 bg-slate-950" />
+        <div className="absolute bottom-32 left-3 h-3 w-28 rounded-full bg-amber-200/70 blur-sm" />
+      </div>
+      <div className="road-line absolute -bottom-16 left-24 hidden h-64 w-3 rounded-full bg-white/55 blur-[1px] lg:block" />
+      <div className="road-line absolute -bottom-6 left-72 hidden h-52 w-2 rounded-full bg-white/30 blur-[1px] lg:block" />
     </div>
   );
 }
@@ -55,9 +50,8 @@ function TruckIllustration() {
 export default function LoginPage() {
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#020813] p-4 text-slate-100 sm:p-8 lg:p-12">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(37,99,235,0.18),transparent_28%),radial-gradient(circle_at_20%_20%,rgba(245,158,11,0.16),transparent_24%)]" />
-      <section className="truck-scene relative mx-auto flex min-h-[calc(100vh-2rem)] max-w-7xl overflow-hidden rounded-[2rem] border border-white/10 shadow-2xl shadow-black/50 sm:min-h-[calc(100vh-4rem)] lg:min-h-[calc(100vh-6rem)]">
-        <TruckIllustration />
+      <section className="login-scene relative mx-auto flex min-h-[calc(100vh-2rem)] max-w-7xl overflow-hidden rounded-[2rem] border border-white/10 shadow-2xl shadow-black/50 sm:min-h-[calc(100vh-4rem)] lg:min-h-[calc(100vh-6rem)]">
+        <TruckBackdrop />
 
         <div className="relative z-10 flex w-full flex-col justify-between p-6 sm:p-10 lg:p-14">
           <Brand />
@@ -104,8 +98,11 @@ export default function LoginPage() {
                   </div>
                 </div>
 
-                <div className="flex justify-end">
-                  <a href="#" className="text-sm font-medium text-blue-400 transition hover:text-blue-300">
+                <div className="flex justify-between gap-4 text-sm">
+                  <Link href="/register" className="font-medium text-amber-300 transition hover:text-amber-200">
+                    Zarejestruj konto
+                  </Link>
+                  <a href="#" className="font-medium text-blue-400 transition hover:text-blue-300">
                     Zapomniałeś hasła?
                   </a>
                 </div>
@@ -125,16 +122,16 @@ export default function LoginPage() {
                 {roles.map((role) => {
                   const Icon = role.icon;
                   return (
-                    <button
+                    <Link
                       key={role.name}
-                      type="button"
+                      href={role.href}
                       className="group rounded-xl border border-white/10 bg-white/[0.04] p-4 text-center transition hover:-translate-y-0.5 hover:border-amber-400/35 hover:bg-white/[0.07]"
                     >
                       <span className={`mx-auto flex h-10 w-10 items-center justify-center rounded-lg ${role.glow}`}>
                         <Icon className={`h-5 w-5 ${role.color}`} />
                       </span>
                       <span className="mt-3 block text-xs font-semibold text-slate-200 group-hover:text-white">{role.name}</span>
-                    </button>
+                    </Link>
                   );
                 })}
               </div>
