@@ -29,8 +29,7 @@ export default function RegisterPage() {
               Utwórz konto w King Delivery Tracker.
             </h1>
             <p className="mt-5 text-base leading-7 text-slate-300">
-              Formularz jest przygotowany pod późniejsze podpięcie Auth.js,
-              walidacji Zod oraz nadawania ról przez administratora.
+              Formularz jest przygotowany pod role dyspozytora i kierowcy, umożliwiając szybkie utworzenie konta z odpowiednimi uprawnieniami.
             </p>
           </div>
 
@@ -146,7 +145,6 @@ export default function RegisterPage() {
                 >
                   <option>dyspozytor</option>
                   <option>kierowca</option>
-                  <option>admin</option>
                 </select>
               </div>
 

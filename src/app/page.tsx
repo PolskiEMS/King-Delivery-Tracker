@@ -70,8 +70,8 @@ export default function LoginPage() {
 
               <p className="mt-5 max-w-lg text-base leading-7 text-slate-300">
                 Panel logowania przygotowany pod role administratora,
-                dyspozytora i kierowcy — gotowy do dalszej integracji z Auth.js
-                oraz bazą PostgreSQL.
+                dyspozytora i kierowcy, umożliwiający szybki dostęp do dedykowanych funkcji i informacji. 
+                Wybierz swoją rolę i zaloguj się, aby rozpocząć zarządzanie dostawami i trasami w systemie King Delivery Tracker.
               </p>
             </div>
 
