@@ -2,9 +2,9 @@ import Link from "next/link";
 import { ArrowLeft, Database, ShieldCheck, UserCog, Users } from "lucide-react";
 
 const cards = [
-  { title: "Użytkownicy", description: "128 kont w systemie", icon: Users, color: "bg-blue-50 text-blue-600" },
+  { title: "Użytkownicy", description: "Dane użytkowników z bazy", icon: Users, color: "bg-blue-50 text-blue-600" },
   { title: "Role i uprawnienia", description: "admin, dyspozytor, kierowca", icon: ShieldCheck, color: "bg-violet-50 text-violet-600" },
-  { title: "Konfiguracja firmy", description: "oddziały, pojazdy, klienci", icon: UserCog, color: "bg-amber-50 text-amber-600" },
+  { title: "Konfiguracja firmy", description: "Dane organizacji z bazy", icon: UserCog, color: "bg-amber-50 text-amber-600" },
   { title: "Baza danych", description: "PostgreSQL / Prisma", icon: Database, color: "bg-emerald-50 text-emerald-600" },
 ];
 
@@ -19,7 +19,7 @@ export default function AdminPage() {
           <p className="text-xs font-semibold uppercase tracking-[0.25em] text-amber-300 sm:text-sm sm:tracking-[0.3em]">Panel administratora</p>
           <h1 className="mt-4 text-3xl font-black sm:text-4xl">Zarządzanie systemem King Delivery Tracker</h1>
           <p className="mt-4 max-w-2xl text-slate-300">
-            Widok startowy dla administratora z miejscem na zarządzanie użytkownikami, rolami, konfiguracją firmy oraz integracją bazy danych.
+            Widok startowy dla administratora jest przygotowany pod dane pobierane z bazy: użytkowników, role, konfigurację firmy i integracje.
           </p>
         </div>
         <div className="mt-6 grid gap-4 sm:mt-8 sm:gap-5 md:grid-cols-2">

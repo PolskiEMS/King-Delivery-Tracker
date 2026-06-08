@@ -39,23 +39,23 @@ export default function RegisterPage() {
             <form className="grid gap-4 sm:grid-cols-2 sm:gap-5">
               <div className="space-y-2">
                 <label htmlFor="firstName" className="text-sm font-semibold text-slate-200">Imię</label>
-                <Input id="firstName" name="firstName" placeholder="Jan" autoComplete="given-name" />
+                <Input id="firstName" name="firstName" placeholder="Wprowadź imię" autoComplete="given-name" />
               </div>
               <div className="space-y-2">
                 <label htmlFor="lastName" className="text-sm font-semibold text-slate-200">Nazwisko</label>
-                <Input id="lastName" name="lastName" placeholder="Kowalski" autoComplete="family-name" />
+                <Input id="lastName" name="lastName" placeholder="Wprowadź nazwisko" autoComplete="family-name" />
               </div>
               <div className="space-y-2 sm:col-span-2">
                 <label htmlFor="company" className="text-sm font-semibold text-slate-200">Firma</label>
                 <div className="relative">
-                  <Input id="company" name="company" placeholder="King Logistics Sp. z o.o." className="pl-11" />
+                  <Input id="company" name="company" placeholder="Nazwa firmy" className="pl-11" />
                   <Building2 className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500" />
                 </div>
               </div>
               <div className="space-y-2 sm:col-span-2">
                 <label htmlFor="email" className="text-sm font-semibold text-slate-200">Email</label>
                 <div className="relative">
-                  <Input id="email" name="email" type="email" placeholder="jan@firma.pl" autoComplete="email" className="pl-11" />
+                  <Input id="email" name="email" type="email" placeholder="Wprowadź email" autoComplete="email" className="pl-11" />
                   <Mail className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500" />
                 </div>
               </div>

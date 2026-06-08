@@ -39,8 +39,8 @@ export function Sidebar() {
           <Truck className="h-5 w-5" />
         </div>
         <div>
-          <p className="text-sm font-semibold text-white">Jan Kowalski</p>
-          <p className="text-xs text-slate-500">Dyspozytor</p>
+          <p className="text-sm font-semibold text-white">Użytkownik</p>
+          <p className="text-xs text-slate-500">Rola z sesji</p>
         </div>
       </div>
     </aside>
