@@ -1,4 +1,4 @@
-import { Bell, CheckCircle2, Clock3, MapPin, PackageCheck, Plus, Route, Search, ShieldQuestion, Truck } from "lucide-react";
+import { Bell, CheckCircle2, Clock3, MapPin, PackageCheck, Plus, Route, Search, ShieldQuestion } from "lucide-react";
 import { Sidebar } from "@/components/dashboard/sidebar";
 
 const stats = [
