@@ -1,13 +1,11 @@
-import * as React from "react";
-import { cn } from "@/lib/utils";
+import type { HTMLAttributes } from "react";
 
-export function Card({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
+type CardProps = HTMLAttributes<HTMLDivElement>;
+
+export function Card({ className = "", ...props }: CardProps) {
   return (
     <div
-      className={cn(
-        "rounded-2xl border border-white/10 bg-slate-900/75 shadow-2xl shadow-black/35 backdrop-blur-xl",
-        className,
-      )}
+      className={`rounded-2xl border border-white/10 bg-slate-950/70 shadow-2xl shadow-black/30 backdrop-blur ${className}`}
       {...props}
     />
   );

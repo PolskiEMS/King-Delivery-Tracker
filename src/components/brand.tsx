@@ -1,13 +1,22 @@
 import { Crown } from "lucide-react";
 
-export function Brand({ compact = false }: { compact?: boolean }) {
+type BrandProps = {
+  compact?: boolean;
+};
+
+export function Brand({ compact = false }: BrandProps) {
   return (
     <div className="flex items-center gap-3">
-      <Crown className={compact ? "h-8 w-8 text-amber-400" : "h-12 w-12 text-amber-400"} strokeWidth={1.8} />
-      <div className="leading-none">
-        <p className={compact ? "text-2xl font-black tracking-[0.08em] text-white" : "text-4xl font-black tracking-[0.08em] text-white"}>KING</p>
-        <p className={compact ? "mt-1 text-[0.6rem] font-bold tracking-[0.17em] text-white/90" : "mt-1 text-sm font-bold tracking-[0.18em] text-white/90"}>DELIVERY TRACKER</p>
-      </div>
+      <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-400 text-slate-950 shadow-lg shadow-amber-400/20">
+        <Crown className="h-6 w-6" />
+      </span>
+
+      {!compact && (
+        <div>
+          <p className="text-lg font-black text-white">King Delivery Tracker</p>
+          <p className="text-xs text-slate-400">Transport • Dostawy • GPS</p>
+        </div>
+      )}
     </div>
   );
 }
