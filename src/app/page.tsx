@@ -58,22 +58,20 @@ export default function LoginPage() {
         <div className="relative z-10 flex w-full flex-col justify-between p-6 sm:p-10 lg:p-14">
           <Brand />
 
-          <div className="mt-12 grid flex-1 items-center gap-10 lg:grid-cols-[1fr_34rem]">
-            <div className="hidden max-w-xl self-end pb-12 lg:block">
-              <p className="text-sm font-semibold uppercase tracking-[0.35em] text-amber-300/80">
-                System logistyczny
-              </p>
-
-              <h1 className="mt-5 text-5xl font-black leading-tight text-white drop-shadow-2xl">
-                Monitoruj dostawy, trasy i pracę kierowców w jednym miejscu.
-              </h1>
-
-              <p className="mt-5 max-w-lg text-base leading-7 text-slate-300">
-                Panel logowania przygotowany pod role administratora,
-                dyspozytora i kierowcy, umożliwiający szybki dostęp do dedykowanych funkcji i informacji. 
-                Wybierz swoją rolę i zaloguj się, aby rozpocząć zarządzanie dostawami i trasami w systemie King Delivery Tracker.
-              </p>
-            </div>
+          <div className="hidden max-w-xl self-center -translate-y-10 lg:block">
+            <p className="text-sm font-semibold uppercase tracking-[0.35em] text-amber-300/80">
+              System logistyczny
+            </p>
+          
+            <h1 className="mt-5 text-5xl font-black leading-tight text-white drop-shadow-2xl">
+              Monitoruj dostawy, trasy i pracę kierowców w jednym miejscu.
+            </h1>
+          
+            <p className="mt-5 max-w-lg text-base leading-7 text-slate-300">
+              Wybierz swoją rolę i zaloguj się, aby rozpocząć zarządzanie dostawami i
+              trasami w systemie King Delivery Tracker.
+            </p>
+          </div>
 
             <Card className="mx-auto w-full max-w-md p-7 sm:p-9 lg:mr-10">
               <div>
