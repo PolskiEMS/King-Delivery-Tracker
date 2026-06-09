@@ -58,6 +58,8 @@ export default function LoginPage() {
         <div className="relative z-10 flex w-full flex-col justify-between p-6 sm:p-10 lg:p-14">
           <Brand />
 
+          
+          <div className="mt-6 grid flex-1 items-center gap-10 lg:grid-cols-[1fr_34rem]">
           <div className="hidden max-w-xl self-center -translate-y-10 lg:block">
             <p className="text-sm font-semibold uppercase tracking-[0.35em] text-amber-300/80">
               System logistyczny
@@ -170,7 +172,7 @@ export default function LoginPage() {
                     </Link>
                   );
                 })}
-              
+              </div>
             </Card>
           </div>
 
