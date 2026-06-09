@@ -14,7 +14,7 @@ import { Sidebar } from "@/components/dashboard/sidebar";
 const stats = [
   {
     label: "Aktywne trasy",
-    value: "12",
+    value: "0",
     link: "Zobacz więcej",
     icon: Route,
     color: "text-blue-600",
@@ -22,7 +22,7 @@ const stats = [
   },
   {
     label: "Dostawy dzisiaj",
-    value: "87",
+    value: "0",
     link: "Zobacz więcej",
     icon: PackageCheck,
     color: "text-red-500",
@@ -30,7 +30,7 @@ const stats = [
   },
   {
     label: "Dostarczone",
-    value: "72",
+    value: "0",
     link: "Zobacz więcej",
     icon: CheckCircle2,
     color: "text-emerald-600",
@@ -38,7 +38,7 @@ const stats = [
   },
   {
     label: "W trakcie",
-    value: "15",
+    value: "0",
     link: "Zobacz więcej",
     icon: Clock3,
     color: "text-amber-500",
@@ -46,31 +46,17 @@ const stats = [
   },
 ];
 
-const routes = [
-  ["TR-2024-05-24-01", "Piotr Nowak", "WZ 1234A", "W trasie", "6/10"],
-  ["TR-2024-05-24-02", "Marek Kowalski", "WZ 5678B", "W trasie", "4/8"],
-  ["TR-2024-05-24-03", "Tomasz Wiśniewski", "WZ 1111C", "Oczekuje", "0/12"],
-  ["TR-2024-05-24-04", "Adam Zieliński", "WZ 2222D", "Zakończona", "12/12"],
-  ["TR-2024-05-24-05", "Kamil Szymański", "WZ 3335E", "W trasie", "3/7"],
+const routes: string[][] = [];
+
+const deliveryStatuses = [
+  ["Dostarczone", "0 (0%)", "bg-emerald-500"],
+  ["W trakcie", "0 (0%)", "bg-amber-500"],
+  ["Oczekuje", "0 (0%)", "bg-slate-500"],
+  ["Problem", "0 (0%)", "bg-red-500"],
+  ["Anulowane", "0 (0%)", "bg-slate-300"],
 ];
 
-const notifications = [
-  [
-    "Dostawa #D-2024-05-24-101 została potwierdzona",
-    "2 min temu",
-    "bg-blue-100 text-blue-700",
-  ],
-  [
-    "Kierowca Piotr Nowak rozpoczął trasę TR-2024-05-24-01",
-    "15 min temu",
-    "bg-slate-100 text-slate-700",
-  ],
-  [
-    "Problem z dostawą #D-2024-05-24-097",
-    "1 godz. temu",
-    "bg-red-100 text-red-700",
-  ],
-];
+const notifications: string[][] = [];
 
 function StatusBadge({ status }: { status: string }) {
   const styles: Record<string, string> = {
@@ -92,58 +78,15 @@ function StatusBadge({ status }: { status: string }) {
 
 function MapPreview() {
   return (
-    <div className="map-grid relative h-72 overflow-hidden rounded-xl bg-slate-50">
-      <svg
-        className="absolute inset-0 h-full w-full"
-        viewBox="0 0 600 280"
-        fill="none"
-        preserveAspectRatio="none"
-      >
-        <path
-          d="M38 230 C105 205 112 126 179 142 S282 181 330 109 S451 76 563 94"
-          stroke="#2563eb"
-          strokeWidth="5"
-          strokeLinecap="round"
-        />
-        <path
-          d="M166 205 C231 184 245 116 320 126 S431 178 540 132"
-          stroke="#f59e0b"
-          strokeWidth="4"
-          strokeLinecap="round"
-        />
-        <path
-          d="M80 70 C166 118 207 66 273 89 S373 134 497 50"
-          stroke="#22c55e"
-          strokeWidth="4"
-          strokeLinecap="round"
-        />
-      </svg>
-
-      {[
-        ["1", "left-[14%] top-[58%] bg-blue-600"],
-        ["2", "left-[32%] top-[43%] bg-emerald-600"],
-        ["3", "left-[56%] top-[30%] bg-amber-500"],
-        ["4", "left-[74%] top-[22%] bg-blue-600"],
-        ["5", "left-[82%] top-[48%] bg-red-500"],
-      ].map(([label, classes]) => (
-        <span
-          key={label}
-          className={`absolute flex h-8 w-8 items-center justify-center rounded-full border-4 border-white text-xs font-black text-white shadow-lg ${classes}`}
-        >
-          {label}
-        </span>
-      ))}
-
-      <div className="absolute bottom-5 right-5 rounded-xl bg-white p-4 shadow-xl">
-        <p className="text-sm font-bold text-slate-900">Piotr Nowak</p>
-        <p className="mt-1 text-xs text-slate-500">TR-2024-05-24-01</p>
-        <div className="mt-3 flex items-center gap-3 text-xs text-slate-600">
-          <span>6 / 10 dostaw</span>
-          <span className="font-semibold">60%</span>
-        </div>
-        <div className="mt-2 h-2 w-44 rounded-full bg-slate-200">
-          <div className="h-2 w-3/5 rounded-full bg-emerald-500" />
-        </div>
+    <div className="map-grid flex h-72 items-center justify-center overflow-hidden rounded-xl bg-slate-50 p-6 text-center">
+      <div>
+        <MapPin className="mx-auto h-10 w-10 text-slate-300" />
+        <p className="mt-3 text-sm font-semibold text-slate-700">
+          Brak aktywnych tras do wyświetlenia
+        </p>
+        <p className="mt-1 text-xs text-slate-500">
+          Mapa zostanie uzupełniona po dodaniu rzeczywistych tras.
+        </p>
       </div>
     </div>
   );
@@ -237,17 +180,31 @@ export default function DispatcherPage() {
                     </thead>
 
                     <tbody className="divide-y divide-slate-100">
-                      {routes.map(([id, driver, vehicle, status, progress]) => (
-                        <tr key={id}>
-                          <td className="py-4 font-semibold">{id}</td>
-                          <td className="py-4">{driver}</td>
-                          <td className="py-4">{vehicle}</td>
-                          <td className="py-4">
-                            <StatusBadge status={status} />
+                      {routes.length > 0 ? (
+                        routes.map(
+                          ([id, driver, vehicle, status, progress]) => (
+                            <tr key={id}>
+                              <td className="py-4 font-semibold">{id}</td>
+                              <td className="py-4">{driver}</td>
+                              <td className="py-4">{vehicle}</td>
+                              <td className="py-4">
+                                <StatusBadge status={status} />
+                              </td>
+                              <td className="py-4 font-semibold">{progress}</td>
+                            </tr>
+                          ),
+                        )
+                      ) : (
+                        <tr>
+                          <td
+                            colSpan={5}
+                            className="py-10 text-center text-sm text-slate-500"
+                          >
+                            Brak tras. Dodaj pierwszą trasę, aby rozpocząć
+                            pracę.
                           </td>
-                          <td className="py-4 font-semibold">{progress}</td>
                         </tr>
-                      ))}
+                      )}
                     </tbody>
                   </table>
                 </div>
@@ -270,18 +227,12 @@ export default function DispatcherPage() {
                 <h2 className="text-lg font-bold">Status dostaw</h2>
 
                 <div className="mt-6 flex items-center gap-8">
-                  <div className="h-32 w-32 rounded-full bg-[conic-gradient(#22c55e_0_62%,#f59e0b_62%_75%,#64748b_75%_85%,#ef4444_85%_93%,#cbd5e1_93%_100%)] p-7">
+                  <div className="h-32 w-32 rounded-full bg-slate-200 p-7">
                     <div className="h-full w-full rounded-full bg-white" />
                   </div>
 
                   <div className="space-y-3 text-sm">
-                    {[
-                      ["Dostarczone", "72 (62%)", "bg-emerald-500"],
-                      ["W trakcie", "15 (13%)", "bg-amber-500"],
-                      ["Oczekuje", "10 (8%)", "bg-slate-500"],
-                      ["Problem", "8 (7%)", "bg-red-500"],
-                      ["Anulowane", "5 (4%)", "bg-slate-300"],
-                    ].map(([label, value, color]) => (
+                    {deliveryStatuses.map(([label, value, color]) => (
                       <div key={label} className="flex items-center gap-3">
                         <span className={`h-3 w-3 rounded-full ${color}`} />
                         <span className="min-w-28 text-slate-600">{label}</span>
@@ -296,20 +247,26 @@ export default function DispatcherPage() {
                 <h2 className="text-lg font-bold">Ostatnie powiadomienia</h2>
 
                 <div className="mt-5 divide-y divide-slate-100">
-                  {notifications.map(([message, time, color]) => (
-                    <div
-                      key={message}
-                      className="flex items-center gap-4 py-4 text-sm"
-                    >
-                      <span
-                        className={`flex h-7 w-7 items-center justify-center rounded-full ${color}`}
+                  {notifications.length > 0 ? (
+                    notifications.map(([message, time, color]) => (
+                      <div
+                        key={message}
+                        className="flex items-center gap-4 py-4 text-sm"
                       >
-                        <MapPin className="h-4 w-4" />
-                      </span>
-                      <p className="flex-1 font-medium">{message}</p>
-                      <span className="text-xs text-slate-500">{time}</span>
-                    </div>
-                  ))}
+                        <span
+                          className={`flex h-7 w-7 items-center justify-center rounded-full ${color}`}
+                        >
+                          <MapPin className="h-4 w-4" />
+                        </span>
+                        <p className="flex-1 font-medium">{message}</p>
+                        <span className="text-xs text-slate-500">{time}</span>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="py-10 text-center text-sm text-slate-500">
+                      Brak powiadomień do wyświetlenia.
+                    </p>
+                  )}
                 </div>
 
                 <a

@@ -29,7 +29,9 @@ export default function RegisterPage() {
               Utwórz konto w King Delivery Tracker.
             </h1>
             <p className="mt-5 text-base leading-7 text-slate-300">
-              Formularz jest przygotowany pod role dyspozytora i kierowcy, umożliwiając szybkie utworzenie konta z odpowiednimi uprawnieniami.
+              Formularz jest przygotowany pod role dyspozytora i kierowcy,
+              umożliwiając szybkie utworzenie konta z odpowiednimi
+              uprawnieniami.
             </p>
           </div>
 
@@ -39,7 +41,9 @@ export default function RegisterPage() {
                 <UserPlus className="h-6 w-6" />
               </span>
               <div>
-                <h2 className="text-2xl font-bold text-white">Zarejestruj się</h2>
+                <h2 className="text-2xl font-bold text-white">
+                  Zarejestruj się
+                </h2>
                 <p className="text-sm text-slate-400">
                   Załóż konto użytkownika systemu
                 </p>
@@ -57,7 +61,7 @@ export default function RegisterPage() {
                 <Input
                   id="firstName"
                   name="firstName"
-                  placeholder="Jan"
+                  placeholder="Imię"
                   autoComplete="given-name"
                 />
               </div>
@@ -72,7 +76,7 @@ export default function RegisterPage() {
                 <Input
                   id="lastName"
                   name="lastName"
-                  placeholder="Kowalski"
+                  placeholder="Nazwisko"
                   autoComplete="family-name"
                 />
               </div>
@@ -88,7 +92,7 @@ export default function RegisterPage() {
                   <Input
                     id="company"
                     name="company"
-                    placeholder="King Logistics Sp. z o.o."
+                    placeholder="Nazwa firmy"
                     className="pl-11"
                   />
                   <Building2 className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500" />
@@ -107,7 +111,7 @@ export default function RegisterPage() {
                     id="email"
                     name="email"
                     type="email"
-                    placeholder="jan@firma.pl"
+                    placeholder="email@firma.pl"
                     autoComplete="email"
                     className="pl-11"
                   />

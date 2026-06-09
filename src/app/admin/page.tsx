@@ -4,7 +4,7 @@ import { ArrowLeft, Database, ShieldCheck, UserCog, Users } from "lucide-react";
 const cards = [
   {
     title: "Użytkownicy",
-    description: "128 kont w systemie",
+    description: "0 kont w systemie",
     icon: Users,
     color: "bg-blue-50 text-blue-600",
   },
