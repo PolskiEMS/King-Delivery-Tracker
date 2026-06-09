@@ -2,11 +2,13 @@ import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 
-const roleRedirects = {
-  ADMIN: "/admin",
-  DISPATCHER: "/dispatcher",
-  DRIVER: "/driver",
-} as const;
+function getRedirectByRole(role: string) {
+  if (role === "ADMIN") return "/admin";
+  if (role === "DISPATCHER") return "/dispatcher";
+  if (role === "DRIVER") return "/driver";
+
+  return "/";
+}
 
 export async function POST(request: Request) {
   try {
@@ -31,6 +33,8 @@ export async function POST(request: Request) {
         { status: 401 }
       );
     }
+    
+    const redirectTo = getRedirectByRole(user.role);
 
     const passwordValid = await bcrypt.compare(password, user.passwordHash);
 
@@ -40,8 +44,6 @@ export async function POST(request: Request) {
         { status: 401 }
       );
     }
-
-    const redirectTo = roleRedirects[user.role];
 
     return NextResponse.json({
       ok: true,
