@@ -1,4 +1,8 @@
+"use client";
+
+import { FormEvent, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Eye, Headphones, ShieldCheck, Truck } from "lucide-react";
 import { Brand } from "@/components/brand";
 import { Button } from "@/components/ui/button";
@@ -50,6 +54,43 @@ function TruckBackdrop() {
 }
 
 export default function LoginPage() {
+  const router = useRouter();
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  async function handleLogin(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError("");
+    setLoading(true);
+
+    const formData = new FormData(event.currentTarget);
+    const email = String(formData.get("email") || "");
+    const password = String(formData.get("password") || "");
+
+    try {
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.ok) {
+        setError(data.message || "Nie udało się zalogować.");
+        return;
+      }
+
+      router.push(data.redirectTo);
+    } catch {
+      setError("Nie udało się połączyć z serwerem.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#020813] p-4 text-slate-100 sm:p-8 lg:p-12">
       <section className="login-scene relative mx-auto flex min-h-[calc(100vh-2rem)] max-w-7xl overflow-hidden rounded-[2rem] border border-white/10 shadow-2xl shadow-black/50 sm:min-h-[calc(100vh-4rem)] lg:min-h-[calc(100vh-6rem)]">
@@ -58,22 +99,21 @@ export default function LoginPage() {
         <div className="relative z-10 flex w-full flex-col justify-between p-6 sm:p-10 lg:p-14">
           <Brand />
 
-          
           <div className="mt-6 grid flex-1 items-center gap-10 lg:grid-cols-[1fr_34rem]">
-          <div className="hidden max-w-xl self-center -translate-y-10 lg:block">
-            <p className="text-sm font-semibold uppercase tracking-[0.35em] text-amber-300/80">
-              System logistyczny
-            </p>
-          
-            <h1 className="mt-5 text-5xl font-black leading-tight text-white drop-shadow-2xl">
-              Monitoruj dostawy, trasy i pracę kierowców w jednym miejscu.
-            </h1>
-          
-            <p className="mt-5 max-w-lg text-base leading-7 text-slate-300">
-              Wybierz swoją rolę i zaloguj się, aby rozpocząć zarządzanie dostawami i
-              trasami w systemie King Delivery Tracker.
-            </p>
-          </div>
+            <div className="hidden max-w-xl self-center -translate-y-10 lg:block">
+              <p className="text-sm font-semibold uppercase tracking-[0.35em] text-amber-300/80">
+                System logistyczny
+              </p>
+
+              <h1 className="mt-5 text-5xl font-black leading-tight text-white drop-shadow-2xl">
+                Monitoruj dostawy, trasy i pracę kierowców w jednym miejscu.
+              </h1>
+
+              <p className="mt-5 max-w-lg text-base leading-7 text-slate-300">
+                Wybierz swoją rolę i zaloguj się, aby rozpocząć zarządzanie
+                dostawami i trasami w systemie King Delivery Tracker.
+              </p>
+            </div>
 
             <Card className="mx-auto w-full max-w-md p-7 sm:p-9 lg:mr-10">
               <div>
@@ -85,12 +125,9 @@ export default function LoginPage() {
                 </p>
               </div>
 
-              <form className="mt-8 space-y-5">
+              <form onSubmit={handleLogin} className="mt-8 space-y-5">
                 <div className="space-y-2">
-                  <label
-                    htmlFor="email"
-                    className="text-sm font-semibold text-slate-200"
-                  >
+                  <label htmlFor="email" className="text-sm font-semibold text-slate-200">
                     Email
                   </label>
                   <Input
@@ -99,14 +136,12 @@ export default function LoginPage() {
                     type="email"
                     placeholder="Wprowadź email"
                     autoComplete="email"
+                    required
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <label
-                    htmlFor="password"
-                    className="text-sm font-semibold text-slate-200"
-                  >
+                  <label htmlFor="password" className="text-sm font-semibold text-slate-200">
                     Hasło
                   </label>
 
@@ -118,10 +153,17 @@ export default function LoginPage() {
                       placeholder="Wprowadź hasło"
                       autoComplete="current-password"
                       className="pr-12"
+                      required
                     />
                     <Eye className="absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500" />
                   </div>
                 </div>
+
+                {error && (
+                  <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm font-medium text-red-200">
+                    {error}
+                  </p>
+                )}
 
                 <div className="flex justify-between gap-4 text-sm">
                   <Link
@@ -131,16 +173,13 @@ export default function LoginPage() {
                     Zarejestruj konto
                   </Link>
 
-                  <a
-                    href="#"
-                    className="font-medium text-blue-400 transition hover:text-blue-300"
-                  >
+                  <a href="#" className="font-medium text-blue-400 transition hover:text-blue-300">
                     Zapomniałeś hasła?
                   </a>
                 </div>
 
-                <Button type="submit" className="w-full">
-                  Zaloguj się
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading ? "Logowanie..." : "Zaloguj się"}
                 </Button>
               </form>
 
@@ -160,9 +199,7 @@ export default function LoginPage() {
                       href={role.href}
                       className="group rounded-xl border border-white/10 bg-white/[0.04] p-4 text-center transition hover:-translate-y-0.5 hover:border-amber-400/35 hover:bg-white/[0.07]"
                     >
-                      <span
-                        className={`mx-auto flex h-10 w-10 items-center justify-center rounded-lg ${role.glow}`}
-                      >
+                      <span className={`mx-auto flex h-10 w-10 items-center justify-center rounded-lg ${role.glow}`}>
                         <Icon className={`h-5 w-5 ${role.color}`} />
                       </span>
 
