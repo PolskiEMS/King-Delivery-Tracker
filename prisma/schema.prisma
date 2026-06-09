@@ -1,48 +1,42 @@
 generator client {
-    provider = "prisma-client-js"
+  provider = "prisma-client-js"
 }
 
 datasource db {
-    provider = "postgresql"
-      url      = env("DATABASE_URL")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 enum UserRole {
-    ADMIN
-      DISPATCHER
-        DRIVER
+  ADMIN
+  DISPATCHER
+  DRIVER
 }
 
 model User {
-    id        String   @id @default(cuid())
-      email     String   @unique
-        password  String
-          firstName String
-            lastName  String
-              role      UserRole
-                createdAt DateTime @default(now())
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  firstName String
+  lastName  String
+  role      UserRole
+  createdAt DateTime @default(now())
 }
 
 model Driver {
-    id        String   @id @default(cuid())
-      firstName String
-        lastName  String
-          phone     String?
-            active    Boolean  @default(true)
-              createdAt DateTime @default(now())
+  id        String   @id @default(cuid())
+  firstName String
+  lastName  String
+  phone     String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
 }
 
 model Vehicle {
-    id           String   @id @default(cuid())
-      registration String   @unique
-        brand        String?
-          model        String?
-            pallets      Int?
-              createdAt    DateTime @default(now())
-}
-}
-}
-}
-}
-}
+  id           String   @id @default(cuid())
+  registration String   @unique
+  brand        String?
+  model        String?
+  pallets      Int?
+  createdAt    DateTime @default(now())
 }
