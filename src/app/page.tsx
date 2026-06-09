@@ -170,7 +170,7 @@ export default function LoginPage() {
                     </Link>
                   );
                 })}
-              </div>
+              
             </Card>
           </div>
 
