@@ -3,7 +3,7 @@
 import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Eye, Headphones, ShieldCheck, Truck } from "lucide-react";
+import { Eye, Headphones, ShieldCheck, Truck, X } from "lucide-react";
 import { Brand } from "@/components/brand";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -57,6 +57,7 @@ export default function LoginPage() {
   const router = useRouter();
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
 
   async function handleLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -173,9 +174,13 @@ export default function LoginPage() {
                     Zarejestruj konto
                   </Link>
 
-                  <a href="#" className="font-medium text-blue-400 transition hover:text-blue-300">
+                  <button
+                    type="button"
+                    onClick={() => setShowForgotPassword(true)}
+                    className="font-medium text-blue-400 transition hover:text-blue-300"
+                  >
                     Zapomniałeś hasła?
-                  </a>
+                  </button>
                 </div>
 
                 <Button type="submit" className="w-full" disabled={loading}>
@@ -218,6 +223,46 @@ export default function LoginPage() {
           </p>
         </div>
       </section>
+
+          {showForgotPassword && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+              <div className="w-full max-w-md rounded-2xl border border-white/10 bg-slate-950 p-6 shadow-2xl">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <h3 className="text-xl font-bold text-white">
+                      Odzyskiwanie hasła
+                    </h3>
+                    <p className="mt-2 text-sm leading-6 text-slate-400">
+                      W tej wersji systemu reset hasła wykonuje administrator.
+                      Skontaktuj się z dyspozytorem lub administratorem systemu,
+                      aby zresetować dostęp do konta.
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowForgotPassword(false)}
+                    className="rounded-lg p-2 text-slate-400 transition hover:bg-white/10 hover:text-white"
+                    aria-label="Zamknij"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+
+                <div className="mt-6 rounded-xl border border-amber-400/20 bg-amber-400/10 p-4 text-sm text-amber-100">
+                  Podaj administratorowi swój adres email używany w systemie.
+                </div>
+
+                <Button
+                  type="button"
+                  onClick={() => setShowForgotPassword(false)}
+                  className="mt-6 w-full"
+                >
+                  Rozumiem
+                </Button>
+              </div>
+            </div>
+          )}
     </main>
   );
 }
