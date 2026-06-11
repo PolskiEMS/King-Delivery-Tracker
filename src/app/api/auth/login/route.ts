@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import { prisma } from "@/lib/prisma";
+import { findAuthUserByEmail } from "@/lib/auth-users";
 
 function getRedirectByRole(role: string) {
   if (role === "ADMIN") return "/admin";
@@ -23,9 +23,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email },
-    });
+    const user = await findAuthUserByEmail(email);
 
     if (!user) {
       return NextResponse.json(
@@ -33,7 +31,7 @@ export async function POST(request: Request) {
         { status: 401 }
       );
     }
-    
+
     const redirectTo = getRedirectByRole(user.role);
 
     const passwordValid = await bcrypt.compare(password, user.passwordHash);
