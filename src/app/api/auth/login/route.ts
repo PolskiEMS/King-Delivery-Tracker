@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import { findAuthUserByEmail } from "@/lib/auth-users";
+import { prisma } from "@/lib/prisma";
 
 function getRedirectByRole(role: string) {
   if (role === "ADMIN") return "/admin";
@@ -14,7 +14,7 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const email = String(body.email || "").toLowerCase().trim();
-    const password = String(body.password || ""); 
+    const password = String(body.password || "");
 
     if (!email || !password) {
       return NextResponse.json(
@@ -23,7 +23,9 @@ export async function POST(request: Request) {
       );
     }
 
-    const user = await findAuthUserByEmail(email);
+    const user = await prisma.user.findUnique({
+      where: { email },
+    });
 
     if (!user) {
       return NextResponse.json(
@@ -31,8 +33,6 @@ export async function POST(request: Request) {
         { status: 401 }
       );
     }
-
-    const redirectTo = getRedirectByRole(user.role);
 
     const passwordValid = await bcrypt.compare(password, user.passwordHash);
 
@@ -42,6 +42,8 @@ export async function POST(request: Request) {
         { status: 401 }
       );
     }
+
+    const redirectTo = getRedirectByRole(user.role);
 
     return NextResponse.json({
       ok: true,
@@ -55,10 +57,14 @@ export async function POST(request: Request) {
       },
     });
   } catch (error) {
-    console.error(error);
+    console.error("LOGIN_ERROR:", error);
 
     return NextResponse.json(
-      { ok: false, message: "Wystąpił błąd logowania." },
+      {
+        ok: false,
+        message: "Wystąpił błąd logowania.",
+        error: error instanceof Error ? error.message : "Unknown error",
+      },
       { status: 500 }
     );
   }
