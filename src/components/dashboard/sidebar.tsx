@@ -2,7 +2,6 @@ import Link from "next/link";
 import {
   Bell,
   LayoutDashboard,
-  Map,
   PackageCheck,
   Route,
   Settings,
@@ -17,7 +16,6 @@ const menu = [
   { label: "Kierowcy", href: "/dispatcher/drivers", icon: Users },
   { label: "Dostawy", href: "/dispatcher/deliveries", icon: Truck },
   { label: "Powiadomienia", href: "/dispatcher/notifications", icon: Bell },
-  { label: "Panel kierowcy", href: "/driver", icon: Map },
   { label: "Ustawienia", href: "/dispatcher/settings", icon: Settings },
 ];
 
