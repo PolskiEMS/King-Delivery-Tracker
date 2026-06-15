@@ -22,6 +22,21 @@ enum OrderStatus {
   CANCELLED
 }
 
+enum DeliveryStatus {
+  PENDING
+  IN_PROGRESS
+  DELIVERED
+  PROBLEM
+  CANCELLED
+}
+
+enum RouteStatus {
+  PLANNED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
 model User {
   id            String   @id @default(cuid())
   email         String   @unique
@@ -77,7 +92,6 @@ model Order {
   @@index([createdAt])
 }
 
-
 model Route {
   id          String      @id @default(cuid())
   routeNumber String      @unique
@@ -116,25 +130,4 @@ model Delivery {
 
   @@index([createdAt])
   @@index([routeId])
-}
-
-model Order {
-  id           String      @id @default(cuid())
-  orderNumber  String      @unique
-  customerName String
-  address      String
-  city         String
-  postalCode   String?
-  country      String      @default("UK")
-  goodsName    String
-  quantity     Float
-  unit         String      @default("szt.")
-  pallets      Int?
-  weightKg     Float?
-  notes        String?
-  status       OrderStatus @default(NEW)
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
-
-  @@index([createdAt])
 }
