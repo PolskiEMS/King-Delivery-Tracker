@@ -1,21 +1,26 @@
 import Link from "next/link";
 import { ArrowLeft, CircleDot, Database, ShieldCheck, UserCog, Users } from "lucide-react";
+import type { DispatcherStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
-const statusLabels = {
+const statusLabels: Record<DispatcherStatus, string> = {
   AVAILABLE: "Dostępny",
+  ACTIVE: "Aktywny",
+  INACTIVE: "Nieaktywny",
   BUSY: "Zajęty",
   AWAY: "Poza stanowiskiem",
   OFFLINE: "Offline",
 };
 
-const statusStyles = {
+const statusStyles: Record<DispatcherStatus, string> = {
   AVAILABLE: "bg-emerald-50 text-emerald-700 ring-emerald-200",
-  BUSY: "bg-amber-50 text-amber-700 ring-amber-200",
-  AWAY: "bg-sky-50 text-sky-700 ring-sky-200",
-  OFFLINE: "bg-slate-100 text-slate-600 ring-slate-200",
+  ACTIVE: "bg-emerald-50 text-emerald-700 ring-emerald-200",
+  INACTIVE: "bg-slate-50 text-slate-600 ring-slate-200",
+  BUSY: "bg-orange-50 text-orange-700 ring-orange-200",
+  AWAY: "bg-yellow-50 text-yellow-700 ring-yellow-200",
+  OFFLINE: "bg-slate-50 text-slate-600 ring-slate-200",
 };
 
 const cards = [
