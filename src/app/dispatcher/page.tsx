@@ -121,6 +121,7 @@ export default function DispatcherPage() {
               <button className="inline-flex items-center gap-2 rounded-xl bg-amber-400 px-4 py-2.5 text-sm font-bold text-[#020813] shadow-lg shadow-amber-500/20 transition hover:bg-amber-300">
                 <Plus className="h-4 w-4" />
                 Dodaj trasę
+                <link rel="app/routes/page.tsx" />
               </button>
 
               <button className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-slate-400 transition hover:border-amber-400/30 hover:bg-white/[0.07] hover:text-amber-300" aria-label="Powiadomienia">
