@@ -51,18 +51,18 @@ export default function DriversPage() {
       <div className="flex min-h-screen">
         <Sidebar />
         <section className="flex-1 bg-[radial-gradient(circle_at_top_right,rgba(251,191,36,0.14),transparent_34%),linear-gradient(180deg,#061123_0%,#020813_44%,#020813_100%)]">
-          <header className="flex min-h-20 flex-col gap-4 border-b border-white/10 bg-[#020813]/90 px-6 py-5 shadow-2xl shadow-black/20 backdrop-blur lg:flex-row lg:items-center lg:justify-between lg:px-9">
+          <header className="flex min-h-20 flex-col gap-4 border-b border-white/10 bg-[#020813]/90 px-4 py-5 shadow-2xl shadow-black/20 backdrop-blur sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-9">
             <div>
               <h1 className="text-2xl font-bold text-white">Kierowcy</h1>
               <p className="mt-1 text-sm text-slate-400">Lista kierowców dostępnych do przypisywania tras.</p>
             </div>
-            <div className="flex gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:flex">
               <button onClick={() => void loadDrivers()} className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-semibold text-slate-300 hover:text-amber-300"><RefreshCw className="h-4 w-4" />Odśwież</button>
               <button onClick={() => setShowForm((value) => !value)} className="inline-flex items-center gap-2 rounded-xl bg-amber-400 px-4 py-2.5 text-sm font-bold text-[#020813]"><Plus className="h-4 w-4" />Dodaj kierowcę</button>
             </div>
           </header>
 
-          <div className="space-y-6 p-6 lg:p-8">
+          <div className="mx-auto w-full max-w-[1600px] space-y-6 px-4 py-5 sm:px-6 lg:p-8">
             <div className="grid gap-4 md:grid-cols-3">
               {[{ label: "Aktywni", value: activeDrivers, icon: Users }, { label: "Wszyscy", value: drivers.length, icon: CheckCircle2 }, { label: "Trasy przypisane", value: drivers.reduce((sum, driver) => sum + driver.routes.length, 0), icon: Route }].map((stat) => {
                 const Icon = stat.icon;
