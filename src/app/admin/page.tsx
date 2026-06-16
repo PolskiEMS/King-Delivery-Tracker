@@ -1,9 +1,60 @@
-import Link from "next/link";
-import { ArrowLeft, CircleDot, Database, ShieldCheck, UserCog, Users } from "lucide-react";
-import type { DispatcherStatus } from "@prisma/client";
-import { prisma } from "@/lib/prisma";
+"use client";
 
-export const dynamic = "force-dynamic";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import {
+  ArrowLeft,
+  BarChart3,
+  CircleDot,
+  Database,
+  ShieldCheck,
+  Trash2,
+  Truck,
+  UserCog,
+  UserPlus,
+  Users,
+} from "lucide-react";
+
+type UserRole = "ADMIN" | "DISPATCHER" | "DRIVER";
+type DispatcherStatus = "AVAILABLE" | "ACTIVE" | "INACTIVE" | "BUSY" | "AWAY" | "OFFLINE";
+
+type AdminUser = {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  role: UserRole;
+  dispatcherStatus: DispatcherStatus;
+  createdAt: string;
+};
+
+type UserForm = {
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+  role: UserRole;
+};
+
+const emptyForm: UserForm = {
+  firstName: "",
+  lastName: "",
+  email: "",
+  password: "",
+  role: "DISPATCHER",
+};
+
+const roleLabels: Record<UserRole, string> = {
+  ADMIN: "Administrator",
+  DISPATCHER: "Dyspozytor",
+  DRIVER: "Kierowca",
+};
+
+const roleStyles: Record<UserRole, string> = {
+  ADMIN: "border-violet-400/30 bg-violet-400/10 text-violet-200",
+  DISPATCHER: "border-amber-400/30 bg-amber-400/10 text-amber-200",
+  DRIVER: "border-sky-400/30 bg-sky-400/10 text-sky-200",
+};
 
 const statusLabels: Record<DispatcherStatus, string> = {
   AVAILABLE: "Dostępny",
@@ -15,145 +66,257 @@ const statusLabels: Record<DispatcherStatus, string> = {
 };
 
 const statusStyles: Record<DispatcherStatus, string> = {
-  AVAILABLE: "bg-emerald-50 text-emerald-700 ring-emerald-200",
-  ACTIVE: "bg-emerald-50 text-emerald-700 ring-emerald-200",
-  INACTIVE: "bg-slate-50 text-slate-600 ring-slate-200",
-  BUSY: "bg-orange-50 text-orange-700 ring-orange-200",
-  AWAY: "bg-yellow-50 text-yellow-700 ring-yellow-200",
-  OFFLINE: "bg-slate-50 text-slate-600 ring-slate-200",
+  AVAILABLE: "border-emerald-400/30 bg-emerald-400/10 text-emerald-200",
+  ACTIVE: "border-emerald-400/30 bg-emerald-400/10 text-emerald-200",
+  INACTIVE: "border-slate-400/30 bg-slate-400/10 text-slate-300",
+  BUSY: "border-orange-400/30 bg-orange-400/10 text-orange-200",
+  AWAY: "border-sky-400/30 bg-sky-400/10 text-sky-200",
+  OFFLINE: "border-slate-400/30 bg-slate-400/10 text-slate-300",
 };
 
-const cards = [
+const controlCards = [
   {
     title: "Użytkownicy",
-    description: "Konta operatorów w systemie",
+    description: "Dodawanie, usuwanie i kontrola kont w systemie.",
     icon: Users,
-    color: "bg-blue-50 text-blue-600",
+    accent: "text-amber-300",
+    bg: "bg-amber-400/10",
   },
   {
     title: "Role i uprawnienia",
-    description: "admin, dyspozytor, kierowca",
+    description: "Administrator, dyspozytor i kierowca w jednym widoku.",
     icon: ShieldCheck,
-    color: "bg-violet-50 text-violet-600",
+    accent: "text-violet-300",
+    bg: "bg-violet-400/10",
   },
   {
-    title: "Konfiguracja firmy",
-    description: "oddziały, pojazdy, klienci",
+    title: "Operacje",
+    description: "Skróty do dyspozytorni, tras, kierowców i dostaw.",
     icon: UserCog,
-    color: "bg-amber-50 text-amber-600",
+    accent: "text-sky-300",
+    bg: "bg-sky-400/10",
   },
   {
     title: "Baza danych",
-    description: "PostgreSQL / Prisma",
+    description: "Centralna kontrola rekordów PostgreSQL / Prisma.",
     icon: Database,
-    color: "bg-emerald-50 text-emerald-600",
+    accent: "text-emerald-300",
+    bg: "bg-emerald-400/10",
   },
 ];
 
-export default async function AdminPage() {
-  const dispatchers = process.env.DATABASE_URL
-    ? await prisma.user.findMany({
-        where: { role: "DISPATCHER" },
-        orderBy: [{ dispatcherStatus: "asc" }, { firstName: "asc" }, { lastName: "asc" }],
-        select: {
-          id: true,
-          email: true,
-          firstName: true,
-          lastName: true,
-          dispatcherStatus: true,
-        },
-      })
-    : [];
+const managementLinks = [
+  { label: "Dyspozytornia", href: "/dispatcher", icon: BarChart3 },
+  { label: "Zamówienia", href: "/dispatcher/orders", icon: Database },
+  { label: "Trasy", href: "/dispatcher/routes", icon: Truck },
+  { label: "Kierowcy", href: "/dispatcher/drivers", icon: Users },
+];
+
+export default function AdminPage() {
+  const [users, setUsers] = useState<AdminUser[]>([]);
+  const [form, setForm] = useState<UserForm>(emptyForm);
+  const [message, setMessage] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const stats = useMemo(() => {
+    const byRole = users.reduce<Record<UserRole, number>>(
+      (acc, user) => ({ ...acc, [user.role]: acc[user.role] + 1 }),
+      { ADMIN: 0, DISPATCHER: 0, DRIVER: 0 },
+    );
+
+    return [
+      { label: "Wszyscy użytkownicy", value: users.length, hint: "pełna kontrola kont" },
+      { label: "Administratorzy", value: byRole.ADMIN, hint: "dostęp do centrum" },
+      { label: "Dyspozytorzy", value: byRole.DISPATCHER, hint: "operacje i trasy" },
+      { label: "Kierowcy", value: byRole.DRIVER, hint: "realizacja dostaw" },
+    ];
+  }, [users]);
+
+  const loadUsers = useCallback(async () => {
+    setIsLoading(true);
+    const response = await fetch("/api/admin/users", { cache: "no-store" });
+    const data = (await response.json()) as { users?: AdminUser[]; message?: string };
+    setUsers(data.users ?? []);
+    setMessage(response.ok ? null : data.message ?? "Nie udało się pobrać użytkowników.");
+    setIsLoading(false);
+  }, []);
+
+  useEffect(() => {
+    void loadUsers();
+  }, [loadUsers]);
+
+  async function createUser(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setIsSaving(true);
+    setMessage(null);
+
+    const response = await fetch("/api/admin/users", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(form),
+    });
+    const data = (await response.json()) as { user?: AdminUser; message?: string };
+    setIsSaving(false);
+
+    if (!response.ok || !data.user) {
+      setMessage(data.message ?? "Nie udało się dodać użytkownika.");
+      return;
+    }
+
+    setUsers((current) => [data.user!, ...current]);
+    setForm(emptyForm);
+    setMessage("Użytkownik został dodany do centrum zarządzania.");
+  }
+
+  async function deleteUser(id: string) {
+    const user = users.find((item) => item.id === id);
+    const confirmed = window.confirm(`Czy na pewno usunąć użytkownika ${user?.firstName ?? ""} ${user?.lastName ?? ""}?`);
+
+    if (!confirmed) return;
+
+    setDeletingId(id);
+    setMessage(null);
+    const response = await fetch(`/api/admin/users?id=${encodeURIComponent(id)}`, { method: "DELETE" });
+    const data = (await response.json()) as { message?: string };
+    setDeletingId(null);
+
+    if (!response.ok) {
+      setMessage(data.message ?? "Nie udało się usunąć użytkownika.");
+      return;
+    }
+
+    setUsers((current) => current.filter((item) => item.id !== id));
+    setMessage("Użytkownik został usunięty.");
+  }
 
   return (
-    <main className="min-h-screen bg-slate-100 p-4 text-slate-900 sm:p-6 lg:p-10">
-      <section className="mx-auto max-w-6xl">
-        <Link
-          href="/"
-          className="inline-flex items-center gap-2 text-sm font-semibold text-blue-600"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Powrót do logowania
-        </Link>
+    <main className="min-h-screen bg-[#020813] text-slate-100">
+      <section className="min-h-screen bg-[radial-gradient(circle_at_top_right,rgba(251,191,36,0.16),transparent_32%),linear-gradient(180deg,#061123_0%,#020813_46%,#020813_100%)] px-4 py-5 sm:px-6 lg:px-10">
+        <div className="mx-auto max-w-[1600px] space-y-6">
+          <header className="rounded-3xl border border-white/10 bg-[#020813]/90 p-5 shadow-2xl shadow-black/30 backdrop-blur sm:p-7">
+            <Link href="/" className="inline-flex items-center gap-2 text-sm font-semibold text-amber-300 transition hover:text-amber-200">
+              <ArrowLeft className="h-4 w-4" />
+              Powrót do logowania
+            </Link>
 
-        <div className="mt-6 rounded-2xl bg-[#07111d] p-5 text-white shadow-2xl shadow-slate-300 sm:mt-8 sm:p-8">
-          <p className="text-sm font-semibold uppercase tracking-[0.3em] text-amber-300">
-            Panel administratora
-          </p>
-          <h1 className="mt-4 text-3xl font-black sm:text-4xl">
-            Zarządzanie systemem King Delivery Tracker
-          </h1>
-          <p className="mt-4 max-w-2xl text-slate-300">
-            Widok startowy dla administratora z miejscem na zarządzanie
-            użytkownikami, rolami, konfiguracją firmy oraz integracją bazy
-            danych.
-          </p>
-        </div>
+            <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_auto] lg:items-end">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-amber-300">
+                  Panel administratora
+                </p>
+                <h1 className="mt-4 max-w-4xl text-3xl font-black text-white sm:text-5xl">
+                  Centrum zarządzania King Delivery Tracker
+                </h1>
+                <p className="mt-4 max-w-3xl text-sm leading-6 text-slate-400 sm:text-base">
+                  Panel admina korzysta z tej samej ciemnej kolorystyki co panel dyspozytora i skupia w jednym miejscu kontrolę użytkowników, ról, statusów oraz najważniejszych obszarów operacyjnych.
+                </p>
+              </div>
 
-        <div className="mt-6 grid gap-4 sm:mt-8 sm:grid-cols-2 lg:gap-5">
-          {cards.map((card) => {
-            const Icon = card.icon;
-
-            return (
-              <article
-                key={card.title}
-                className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6"
-              >
-                <span
-                  className={`flex h-12 w-12 items-center justify-center rounded-xl ${card.color}`}
-                >
-                  <Icon className="h-6 w-6" />
-                </span>
-                <h2 className="mt-5 text-xl font-bold">{card.title}</h2>
-                <p className="mt-2 text-slate-500">{card.description}</p>
-              </article>
-            );
-          })}
-        </div>
-
-        <article className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:mt-8 sm:p-6">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-amber-600">
-                Statusy dyspozytorów
-              </p>
-              <h2 className="mt-2 text-2xl font-black text-slate-950">
-                Widoczność pracy dyspozytorów
-              </h2>
+              <div className="grid gap-2 sm:grid-cols-2 lg:w-[420px]">
+                {managementLinks.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <Link key={item.label} href={item.href} className="group flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-bold text-slate-300 transition hover:border-amber-400/40 hover:bg-amber-400/10 hover:text-amber-200">
+                      <Icon className="h-4 w-4 text-amber-300" />
+                      {item.label}
+                    </Link>
+                  );
+                })}
+              </div>
             </div>
-            <p className="text-sm font-semibold text-slate-500">
-              {dispatchers.length} kont dyspozytorów
-            </p>
+          </header>
+
+          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+            {stats.map((stat) => (
+              <article key={stat.label} className="rounded-2xl border border-white/10 bg-white/[0.04] p-5 shadow-2xl shadow-black/20 backdrop-blur">
+                <p className="text-3xl font-black text-white">{stat.value}</p>
+                <p className="mt-2 text-sm font-semibold text-slate-300">{stat.label}</p>
+                <p className="mt-1 text-xs text-slate-500">{stat.hint}</p>
+              </article>
+            ))}
           </div>
 
-          <div className="mt-5 grid gap-3">
-            {dispatchers.length ? (
-              dispatchers.map((dispatcher) => (
-                <div
-                  key={dispatcher.id}
-                  className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 sm:flex-row sm:items-center sm:justify-between"
-                >
-                  <div>
-                    <p className="font-bold text-slate-950">
-                      {dispatcher.firstName} {dispatcher.lastName}
-                    </p>
-                    <p className="text-sm text-slate-500">{dispatcher.email}</p>
-                  </div>
-                  <span
-                    className={`inline-flex w-fit items-center gap-2 rounded-full px-3 py-1 text-xs font-bold ring-1 ${statusStyles[dispatcher.dispatcherStatus]}`}
-                  >
-                    <CircleDot className="h-3.5 w-3.5" />
-                    {statusLabels[dispatcher.dispatcherStatus]}
-                  </span>
+          <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
+            <article className="rounded-2xl border border-white/10 bg-white/[0.04] p-5 shadow-2xl shadow-black/20 backdrop-blur sm:p-6">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-300">Dodawanie użytkowników</p>
+              <h2 className="mt-2 text-xl font-black text-white">Utwórz konto w systemie</h2>
+              <p className="mt-2 text-sm text-slate-400">Administrator może zakładać konta dla administratorów, dyspozytorów i kierowców.</p>
+
+              <form onSubmit={createUser} className="mt-6 grid gap-4">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <input required value={form.firstName} onChange={(event) => setForm((current) => ({ ...current, firstName: event.target.value }))} placeholder="Imię" className="rounded-xl border border-white/10 bg-[#020813]/70 px-4 py-3 text-sm font-semibold text-white outline-none placeholder:text-slate-600 focus:border-amber-400/50" />
+                  <input required value={form.lastName} onChange={(event) => setForm((current) => ({ ...current, lastName: event.target.value }))} placeholder="Nazwisko" className="rounded-xl border border-white/10 bg-[#020813]/70 px-4 py-3 text-sm font-semibold text-white outline-none placeholder:text-slate-600 focus:border-amber-400/50" />
                 </div>
-              ))
-            ) : (
-              <p className="rounded-xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">
-                Brak kont dyspozytorów do wyświetlenia.
-              </p>
-            )}
+                <input required type="email" value={form.email} onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))} placeholder="email@firma.com" className="rounded-xl border border-white/10 bg-[#020813]/70 px-4 py-3 text-sm font-semibold text-white outline-none placeholder:text-slate-600 focus:border-amber-400/50" />
+                <input required type="password" minLength={8} value={form.password} onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))} placeholder="Hasło min. 8 znaków" className="rounded-xl border border-white/10 bg-[#020813]/70 px-4 py-3 text-sm font-semibold text-white outline-none placeholder:text-slate-600 focus:border-amber-400/50" />
+                <select value={form.role} onChange={(event) => setForm((current) => ({ ...current, role: event.target.value as UserRole }))} className="rounded-xl border border-white/10 bg-[#020813]/70 px-4 py-3 text-sm font-semibold text-white outline-none focus:border-amber-400/50">
+                  {Object.entries(roleLabels).map(([role, label]) => <option key={role} value={role}>{label}</option>)}
+                </select>
+                <button disabled={isSaving} className="inline-flex items-center justify-center gap-2 rounded-xl bg-amber-400 px-5 py-3 text-sm font-black text-slate-950 shadow-lg shadow-amber-400/10 transition hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-60">
+                  <UserPlus className="h-4 w-4" />
+                  {isSaving ? "Dodawanie..." : "Dodaj użytkownika"}
+                </button>
+              </form>
+            </article>
+
+            <article className="rounded-2xl border border-white/10 bg-white/[0.04] p-5 shadow-2xl shadow-black/20 backdrop-blur sm:p-6">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-300">Kontrola systemu</p>
+                  <h2 className="mt-2 text-xl font-black text-white">Użytkownicy i uprawnienia</h2>
+                </div>
+                <p className="text-sm font-semibold text-slate-500">{isLoading ? "Ładowanie..." : `${users.length} kont`}</p>
+              </div>
+
+              {message && <p className="mt-4 rounded-xl border border-amber-400/20 bg-amber-400/10 px-4 py-3 text-sm font-semibold text-amber-100">{message}</p>}
+
+              <div className="mt-5 overflow-x-auto">
+                <table className="w-full min-w-[760px] text-left text-sm text-slate-300">
+                  <thead className="text-xs uppercase tracking-[0.18em] text-slate-500">
+                    <tr>
+                      <th className="pb-4">Użytkownik</th>
+                      <th className="pb-4">Rola</th>
+                      <th className="pb-4">Status</th>
+                      <th className="pb-4">Utworzono</th>
+                      <th className="pb-4 text-right">Akcje</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/10">
+                    {users.length ? users.map((user) => (
+                      <tr key={user.id}>
+                        <td className="py-4">
+                          <p className="font-bold text-white">{user.firstName} {user.lastName}</p>
+                          <p className="text-xs text-slate-500">{user.email}</p>
+                        </td>
+                        <td className="py-4"><span className={`rounded-full border px-3 py-1 text-xs font-bold ${roleStyles[user.role]}`}>{roleLabels[user.role]}</span></td>
+                        <td className="py-4"><span className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-bold ${statusStyles[user.dispatcherStatus]}`}><CircleDot className="h-3.5 w-3.5" />{user.role === "DISPATCHER" ? statusLabels[user.dispatcherStatus] : "Nie dotyczy"}</span></td>
+                        <td className="py-4 text-slate-400">{new Intl.DateTimeFormat("pl-PL").format(new Date(user.createdAt))}</td>
+                        <td className="py-4 text-right"><button type="button" disabled={deletingId === user.id} onClick={() => deleteUser(user.id)} className="inline-flex items-center gap-2 rounded-xl border border-red-400/20 bg-red-400/10 px-3 py-2 text-xs font-bold text-red-200 transition hover:border-red-300/40 hover:bg-red-400/15 disabled:cursor-not-allowed disabled:opacity-60"><Trash2 className="h-4 w-4" />Usuń</button></td>
+                      </tr>
+                    )) : (
+                      <tr><td colSpan={5} className="py-10 text-center text-sm text-slate-500">Brak użytkowników do wyświetlenia.</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </article>
           </div>
-        </article>
+
+          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+            {controlCards.map((card) => {
+              const Icon = card.icon;
+              return (
+                <article key={card.title} className="rounded-2xl border border-white/10 bg-white/[0.04] p-5 shadow-2xl shadow-black/20 backdrop-blur">
+                  <span className={`flex h-12 w-12 items-center justify-center rounded-xl border border-white/10 ${card.bg}`}><Icon className={`h-6 w-6 ${card.accent}`} /></span>
+                  <h3 className="mt-5 text-lg font-black text-white">{card.title}</h3>
+                  <p className="mt-2 text-sm text-slate-400">{card.description}</p>
+                </article>
+              );
+            })}
+          </div>
+        </div>
       </section>
     </main>
   );
