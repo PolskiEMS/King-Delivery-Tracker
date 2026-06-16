@@ -15,6 +15,8 @@ enum UserRole {
 
 enum DispatcherStatus {
   AVAILABLE
+  ACTIVE
+  INACTIVE
   BUSY
   AWAY
   OFFLINE
