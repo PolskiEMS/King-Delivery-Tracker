@@ -1,19 +1,34 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
-import { CheckCircle2, Loader2, Phone, Plus, RefreshCw, Route, Users } from "lucide-react";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { CheckCircle2, Edit3, Loader2, Phone, Plus, RefreshCw, Route, Users } from "lucide-react";
 import { Sidebar } from "@/components/dashboard/sidebar";
 
 type Driver = { id: string; firstName: string; lastName: string; phone: string | null; active: boolean; routes: unknown[] };
-const initialForm = { firstName: "", lastName: "", phone: "" };
+const initialForm = { firstName: "", lastName: "", phone: "", active: true };
 
 export default function DriversPage() {
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [form, setForm] = useState(initialForm);
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const formRef = useRef<HTMLElement | null>(null);
+
+  const scrollToForm = useCallback(() => {
+    window.requestAnimationFrame(() => {
+      formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }, []);
+
+  const openCreateForm = useCallback(() => {
+    setEditingId(null);
+    setForm(initialForm);
+    setShowForm(true);
+    scrollToForm();
+  }, [scrollToForm]);
 
   const loadDrivers = useCallback(async () => {
     setLoading(true);
@@ -31,7 +46,7 @@ export default function DriversPage() {
     event.preventDefault();
     setSaving(true);
     setMessage(null);
-    const response = await fetch("/api/drivers", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
+    const response = await fetch("/api/drivers", { method: editingId ? "PATCH" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(editingId ? { ...form, id: editingId } : form) });
     const data = (await response.json()) as { ok: boolean; error?: string };
     setSaving(false);
 
@@ -42,8 +57,16 @@ export default function DriversPage() {
 
     setForm(initialForm);
     setShowForm(false);
-    setMessage("Kierowca został dodany.");
+    setEditingId(null);
+    setMessage(editingId ? "Dane kierowcy zostały zaktualizowane." : "Kierowca został dodany.");
     await loadDrivers();
+  }
+
+  function editDriver(driver: Driver) {
+    setEditingId(driver.id);
+    setForm({ firstName: driver.firstName, lastName: driver.lastName, phone: driver.phone ?? "", active: driver.active });
+    setShowForm(true);
+    scrollToForm();
   }
 
   return (
@@ -58,7 +81,7 @@ export default function DriversPage() {
             </div>
             <div className="grid grid-cols-1 gap-3 sm:flex">
               <button onClick={() => void loadDrivers()} className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-semibold text-slate-300 hover:text-amber-300"><RefreshCw className="h-4 w-4" />Odśwież</button>
-              <button onClick={() => setShowForm((value) => !value)} className="inline-flex items-center gap-2 rounded-xl bg-amber-400 px-4 py-2.5 text-sm font-bold text-[#020813]"><Plus className="h-4 w-4" />Dodaj kierowcę</button>
+              <button onClick={openCreateForm} className="inline-flex items-center justify-center gap-2 rounded-xl bg-amber-400 px-4 py-2.5 text-sm font-bold text-[#020813]"><Plus className="h-4 w-4" />Dodaj kierowcę</button>
             </div>
           </header>
 
@@ -72,20 +95,21 @@ export default function DriversPage() {
 
             {message && <div className="rounded-2xl border border-amber-400/30 bg-amber-400/10 p-4 text-sm font-semibold text-amber-200">{message}</div>}
 
-            {showForm && <article className="rounded-2xl border border-white/10 bg-white/[0.04] p-6 shadow-2xl shadow-black/20">
-              <h2 className="text-lg font-bold text-white">Nowy kierowca</h2>
-              <form onSubmit={submit} className="mt-5 grid gap-4 md:grid-cols-3">
+            {showForm && <article ref={formRef} id="formularz-kierowcy" className="scroll-mt-4 rounded-2xl border border-white/10 bg-white/[0.04] p-4 shadow-2xl shadow-black/20 sm:p-6">
+              <h2 className="text-lg font-bold text-white">{editingId ? "Edytuj kierowcę" : "Nowy kierowca"}</h2>
+              <form onSubmit={submit} className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <input required placeholder="Imię" value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} className="rounded-xl border border-white/10 bg-[#020813]/70 px-4 py-3 text-sm text-white outline-none focus:border-amber-400/50" />
                 <input required placeholder="Nazwisko" value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} className="rounded-xl border border-white/10 bg-[#020813]/70 px-4 py-3 text-sm text-white outline-none focus:border-amber-400/50" />
                 <input placeholder="Telefon" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="rounded-xl border border-white/10 bg-[#020813]/70 px-4 py-3 text-sm text-white outline-none focus:border-amber-400/50" />
-                <button disabled={saving} className="inline-flex items-center justify-center gap-2 rounded-xl bg-amber-400 px-5 py-3 text-sm font-bold text-[#020813] md:col-span-3">{saving && <Loader2 className="h-4 w-4 animate-spin" />}Zapisz kierowcę</button>
+                <select value={form.active ? "active" : "inactive"} onChange={(e) => setForm({ ...form, active: e.target.value === "active" })} className="rounded-xl border border-white/10 bg-[#020813]/70 px-4 py-3 text-sm text-white outline-none focus:border-amber-400/50"><option value="active">Aktywny</option><option value="inactive">Nieaktywny</option></select>
+                <button disabled={saving} className="inline-flex items-center justify-center gap-2 rounded-xl bg-amber-400 px-5 py-3 text-sm font-bold text-[#020813] sm:col-span-2 lg:col-span-4">{saving && <Loader2 className="h-4 w-4 animate-spin" />}{editingId ? "Zapisz zmiany" : "Zapisz kierowcę"}</button>
               </form>
             </article>}
 
             <article className="rounded-2xl border border-white/10 bg-white/[0.04] p-6 shadow-2xl shadow-black/20">
               <h2 className="text-lg font-bold text-white">Lista kierowców</h2>
               <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                {loading ? <p className="text-slate-500">Ładowanie kierowców...</p> : drivers.length ? drivers.map((driver) => <div key={driver.id} className="rounded-2xl border border-white/10 bg-[#020813]/50 p-5"><p className="font-bold text-white">{driver.firstName} {driver.lastName}</p><p className="mt-2 flex items-center gap-2 text-sm text-slate-400"><Phone className="h-4 w-4 text-amber-300" />{driver.phone ?? "Brak telefonu"}</p><p className="mt-3 text-xs font-semibold uppercase tracking-[0.2em] text-emerald-300">{driver.active ? "Aktywny" : "Nieaktywny"}</p></div>) : <p className="text-slate-500">Brak kierowców. Dodaj pierwszego kierowcę.</p>}
+                {loading ? <p className="text-slate-500">Ładowanie kierowców...</p> : drivers.length ? drivers.map((driver) => <div key={driver.id} className="rounded-2xl border border-white/10 bg-[#020813]/50 p-5"><p className="font-bold text-white">{driver.firstName} {driver.lastName}</p><p className="mt-2 flex items-center gap-2 text-sm text-slate-400"><Phone className="h-4 w-4 text-amber-300" />{driver.phone ?? "Brak telefonu"}</p><p className="mt-3 text-xs font-semibold uppercase tracking-[0.2em] text-emerald-300">{driver.active ? "Aktywny" : "Nieaktywny"}</p><button type="button" onClick={() => editDriver(driver)} className="mt-4 inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-bold text-slate-300 transition hover:border-amber-400/30 hover:text-amber-300"><Edit3 className="h-3.5 w-3.5" />Edytuj</button></div>) : <p className="text-slate-500">Brak kierowców. Dodaj pierwszego kierowcę.</p>}
               </div>
             </article>
           </div>

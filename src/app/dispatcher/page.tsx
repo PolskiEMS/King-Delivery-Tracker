@@ -1,6 +1,10 @@
+"use client";
+
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   Bell,
+  CircleDot,
   CheckCircle2,
   Clock3,
   MapPin,
@@ -59,6 +63,25 @@ const deliveryStatuses = [
 
 const notifications: string[][] = [];
 
+type DispatcherStatus = "AVAILABLE" | "BUSY" | "AWAY" | "OFFLINE";
+type Dispatcher = { id: string; email: string; firstName: string; lastName: string; dispatcherStatus: DispatcherStatus };
+
+const dispatcherStatusLabels: Record<DispatcherStatus, string> = {
+  AVAILABLE: "Dostępny",
+  BUSY: "Zajęty",
+  AWAY: "Poza stanowiskiem",
+  OFFLINE: "Offline",
+};
+
+const dispatcherStatusStyles: Record<DispatcherStatus, string> = {
+  AVAILABLE: "border-emerald-400/30 bg-emerald-400/10 text-emerald-200",
+  BUSY: "border-amber-400/30 bg-amber-400/10 text-amber-200",
+  AWAY: "border-sky-400/30 bg-sky-400/10 text-sky-200",
+  OFFLINE: "border-slate-400/30 bg-slate-400/10 text-slate-300",
+};
+
+const dispatcherStatuses = Object.keys(dispatcherStatusLabels) as DispatcherStatus[];
+
 function StatusBadge({ status }: { status: string }) {
   const styles: Record<string, string> = {
     "W trasie": "border-amber-400/30 bg-amber-400/10 text-amber-200",
@@ -96,6 +119,51 @@ function MapPreview() {
 }
 
 export default function DispatcherPage() {
+  const [dispatchers, setDispatchers] = useState<Dispatcher[]>([]);
+  const [selectedDispatcherId, setSelectedDispatcherId] = useState("");
+  const [dispatcherMessage, setDispatcherMessage] = useState<string | null>(null);
+  const [statusSaving, setStatusSaving] = useState(false);
+
+  const selectedDispatcher = useMemo(
+    () => dispatchers.find((dispatcher) => dispatcher.id === selectedDispatcherId) ?? dispatchers[0],
+    [dispatchers, selectedDispatcherId],
+  );
+
+  const loadDispatchers = useCallback(async () => {
+    const response = await fetch("/api/dispatchers", { cache: "no-store" });
+    const data = (await response.json()) as { dispatchers?: Dispatcher[] };
+    const loadedDispatchers = data.dispatchers ?? [];
+    setDispatchers(loadedDispatchers);
+    setSelectedDispatcherId((current) => current || loadedDispatchers[0]?.id || "");
+  }, []);
+
+  useEffect(() => {
+    void loadDispatchers();
+  }, [loadDispatchers]);
+
+  async function updateDispatcherStatus(dispatcherStatus: DispatcherStatus) {
+    if (!selectedDispatcher) return;
+
+    setStatusSaving(true);
+    setDispatcherMessage(null);
+
+    const response = await fetch("/api/dispatchers", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: selectedDispatcher.id, dispatcherStatus }),
+    });
+    const data = (await response.json()) as { ok: boolean; error?: string; dispatcher?: Dispatcher };
+    setStatusSaving(false);
+
+    if (!response.ok || !data.ok || !data.dispatcher) {
+      setDispatcherMessage(data.error ?? "Nie udało się zmienić statusu.");
+      return;
+    }
+
+    setDispatchers((current) => current.map((dispatcher) => dispatcher.id === data.dispatcher?.id ? data.dispatcher : dispatcher));
+    setDispatcherMessage("Status dyspozytora został zmieniony.");
+  }
+
   return (
     <main className="min-h-screen bg-[#020813] text-slate-100">
       <div className="flex min-h-screen">
@@ -170,6 +238,61 @@ export default function DispatcherPage() {
                 );
               })}
             </div>
+
+            <article className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 shadow-2xl shadow-black/20 backdrop-blur sm:p-6">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-300">
+                    Status dyspozytora
+                  </p>
+                  <h2 className="mt-2 text-lg font-bold text-white">
+                    Zmień swoją dostępność
+                  </h2>
+                  <p className="mt-1 text-sm text-slate-400">
+                    Status jest widoczny dla administratora w panelu admin.
+                  </p>
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] lg:min-w-[560px]">
+                  <select
+                    value={selectedDispatcher?.id ?? ""}
+                    onChange={(event) => setSelectedDispatcherId(event.target.value)}
+                    className="rounded-xl border border-white/10 bg-[#020813]/70 px-4 py-3 text-sm font-semibold text-white outline-none focus:border-amber-400/50"
+                  >
+                    {dispatchers.length ? dispatchers.map((dispatcher) => (
+                      <option key={dispatcher.id} value={dispatcher.id}>
+                        {dispatcher.firstName} {dispatcher.lastName}
+                      </option>
+                    )) : <option value="">Brak dyspozytorów</option>}
+                  </select>
+
+                  {selectedDispatcher && (
+                    <span className={`inline-flex items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm font-bold ${dispatcherStatusStyles[selectedDispatcher.dispatcherStatus]}`}>
+                      <CircleDot className="h-4 w-4" />
+                      {dispatcherStatusLabels[selectedDispatcher.dispatcherStatus]}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div className="mt-4 grid gap-2 sm:grid-cols-4">
+                {dispatcherStatuses.map((status) => (
+                  <button
+                    key={status}
+                    type="button"
+                    disabled={!selectedDispatcher || statusSaving}
+                    onClick={() => updateDispatcherStatus(status)}
+                    className={`rounded-xl border px-4 py-3 text-sm font-bold transition disabled:cursor-not-allowed disabled:opacity-50 ${dispatcherStatusStyles[status]}`}
+                  >
+                    {dispatcherStatusLabels[status]}
+                  </button>
+                ))}
+              </div>
+
+              {dispatcherMessage && (
+                <p className="mt-3 text-sm font-semibold text-amber-200">{dispatcherMessage}</p>
+              )}
+            </article>
 
             <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
               <article className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 shadow-2xl shadow-black/20 backdrop-blur sm:p-6">
