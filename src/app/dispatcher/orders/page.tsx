@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertCircle,
   CheckCircle2,
@@ -157,6 +157,18 @@ export default function DispatcherOrdersPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const formRef = useRef<HTMLElement | null>(null);
+
+  const scrollToForm = useCallback(() => {
+    window.requestAnimationFrame(() => {
+      formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }, []);
+
+  const openForm = useCallback(() => {
+    setShowForm(true);
+    scrollToForm();
+  }, [scrollToForm]);
 
   const loadOrders = useCallback(async () => {
     setIsLoading(true);
@@ -185,6 +197,12 @@ export default function DispatcherOrdersPage() {
   useEffect(() => {
     void loadOrders();
   }, [loadOrders]);
+
+  useEffect(() => {
+    if (window.location.hash === "#nowe-zamowienie") {
+      openForm();
+    }
+  }, [openForm]);
 
   const stats = useMemo(
     () =>
@@ -238,7 +256,7 @@ export default function DispatcherOrdersPage() {
         <Sidebar />
 
         <section className="flex-1 bg-[radial-gradient(circle_at_top_right,rgba(251,191,36,0.14),transparent_34%),linear-gradient(180deg,#061123_0%,#020813_44%,#020813_100%)]">
-          <header className="flex min-h-20 flex-col gap-4 border-b border-white/10 bg-[#020813]/90 px-6 py-5 shadow-2xl shadow-black/20 backdrop-blur lg:flex-row lg:items-center lg:justify-between lg:px-9">
+          <header className="flex min-h-20 flex-col gap-4 border-b border-white/10 bg-[#020813]/90 px-4 py-5 shadow-2xl shadow-black/20 backdrop-blur sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-9">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.25em] text-amber-300 lg:hidden">
                 King Delivery Tracker
@@ -249,7 +267,7 @@ export default function DispatcherOrdersPage() {
               </p>
             </div>
 
-            <div className="flex flex-wrap items-center gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:flex sm:flex-wrap sm:items-center">
               <button
                 type="button"
                 onClick={() => void loadOrders()}
@@ -260,8 +278,8 @@ export default function DispatcherOrdersPage() {
               </button>
               <button
                 type="button"
-                onClick={() => setShowForm((current) => !current)}
-                className="inline-flex items-center gap-2 rounded-xl bg-amber-400 px-4 py-2.5 text-sm font-bold text-[#020813] shadow-lg shadow-amber-500/20 transition hover:bg-amber-300"
+                onClick={openForm}
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-amber-400 px-4 py-3 text-sm font-bold text-[#020813] shadow-lg shadow-amber-500/20 transition hover:bg-amber-300 sm:py-2.5"
               >
                 <Plus className="h-4 w-4" />
                 Dodaj zamówienie
@@ -269,7 +287,7 @@ export default function DispatcherOrdersPage() {
             </div>
           </header>
 
-          <div className="space-y-6 p-6 lg:p-8">
+          <div className="mx-auto w-full max-w-[1600px] space-y-6 px-4 py-5 sm:px-6 lg:p-8">
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
               {stats.map((stat) => {
                 const Icon = stat.icon;
@@ -316,7 +334,7 @@ export default function DispatcherOrdersPage() {
             )}
 
             {showForm && (
-              <article className="rounded-2xl border border-white/10 bg-white/[0.04] p-6 shadow-2xl shadow-black/20 backdrop-blur">
+              <article ref={formRef} id="nowe-zamowienie" className="scroll-mt-4 rounded-2xl border border-white/10 bg-white/[0.04] p-4 shadow-2xl shadow-black/20 backdrop-blur sm:p-6">
                 <div className="mb-5 flex items-center justify-between gap-4">
                   <div>
                     <h2 className="text-lg font-bold text-white">
@@ -328,7 +346,7 @@ export default function DispatcherOrdersPage() {
                   </div>
                 </div>
 
-                <form onSubmit={handleSubmit} className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                <form onSubmit={handleSubmit} className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                   {formFields.map((field) => (
                     <label
                       key={field.name}
@@ -360,7 +378,7 @@ export default function DispatcherOrdersPage() {
                     />
                   </label>
 
-                  <div className="flex flex-wrap gap-3 md:col-span-2 xl:col-span-3">
+                  <div className="grid gap-3 sm:col-span-2 sm:flex sm:flex-wrap xl:col-span-3">
                     <button
                       type="submit"
                       disabled={isSaving}

@@ -13,6 +13,13 @@ enum UserRole {
   DRIVER
 }
 
+enum DispatcherStatus {
+  AVAILABLE
+  BUSY
+  AWAY
+  OFFLINE
+}
+
 enum OrderStatus {
   NEW
   ASSIGNED
@@ -44,6 +51,7 @@ model User {
   firstName     String
   lastName      String
   role          UserRole
+  dispatcherStatus DispatcherStatus @default(OFFLINE)
   createdAt     DateTime @default(now())
 }
 

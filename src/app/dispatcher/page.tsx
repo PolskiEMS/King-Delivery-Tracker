@@ -1,6 +1,10 @@
+"use client";
+
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   Bell,
+  CircleDot,
   CheckCircle2,
   Clock3,
   MapPin,
@@ -59,6 +63,25 @@ const deliveryStatuses = [
 
 const notifications: string[][] = [];
 
+type DispatcherStatus = "AVAILABLE" | "BUSY" | "AWAY" | "OFFLINE";
+type Dispatcher = { id: string; email: string; firstName: string; lastName: string; dispatcherStatus: DispatcherStatus };
+
+const dispatcherStatusLabels: Record<DispatcherStatus, string> = {
+  AVAILABLE: "Dostępny",
+  BUSY: "Zajęty",
+  AWAY: "Poza stanowiskiem",
+  OFFLINE: "Offline",
+};
+
+const dispatcherStatusStyles: Record<DispatcherStatus, string> = {
+  AVAILABLE: "border-emerald-400/30 bg-emerald-400/10 text-emerald-200",
+  BUSY: "border-amber-400/30 bg-amber-400/10 text-amber-200",
+  AWAY: "border-sky-400/30 bg-sky-400/10 text-sky-200",
+  OFFLINE: "border-slate-400/30 bg-slate-400/10 text-slate-300",
+};
+
+const dispatcherStatuses = Object.keys(dispatcherStatusLabels) as DispatcherStatus[];
+
 function StatusBadge({ status }: { status: string }) {
   const styles: Record<string, string> = {
     "W trasie": "border-amber-400/30 bg-amber-400/10 text-amber-200",
@@ -96,13 +119,58 @@ function MapPreview() {
 }
 
 export default function DispatcherPage() {
+  const [dispatchers, setDispatchers] = useState<Dispatcher[]>([]);
+  const [selectedDispatcherId, setSelectedDispatcherId] = useState("");
+  const [dispatcherMessage, setDispatcherMessage] = useState<string | null>(null);
+  const [statusSaving, setStatusSaving] = useState(false);
+
+  const selectedDispatcher = useMemo(
+    () => dispatchers.find((dispatcher) => dispatcher.id === selectedDispatcherId) ?? dispatchers[0],
+    [dispatchers, selectedDispatcherId],
+  );
+
+  const loadDispatchers = useCallback(async () => {
+    const response = await fetch("/api/dispatchers", { cache: "no-store" });
+    const data = (await response.json()) as { dispatchers?: Dispatcher[] };
+    const loadedDispatchers = data.dispatchers ?? [];
+    setDispatchers(loadedDispatchers);
+    setSelectedDispatcherId((current) => current || loadedDispatchers[0]?.id || "");
+  }, []);
+
+  useEffect(() => {
+    void loadDispatchers();
+  }, [loadDispatchers]);
+
+  async function updateDispatcherStatus(dispatcherStatus: DispatcherStatus) {
+    if (!selectedDispatcher) return;
+
+    setStatusSaving(true);
+    setDispatcherMessage(null);
+
+    const response = await fetch("/api/dispatchers", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: selectedDispatcher.id, dispatcherStatus }),
+    });
+    const data = (await response.json()) as { ok: boolean; error?: string; dispatcher?: Dispatcher };
+    setStatusSaving(false);
+
+    if (!response.ok || !data.ok || !data.dispatcher) {
+      setDispatcherMessage(data.error ?? "Nie udało się zmienić statusu.");
+      return;
+    }
+
+    setDispatchers((current) => current.map((dispatcher) => dispatcher.id === data.dispatcher?.id ? data.dispatcher : dispatcher));
+    setDispatcherMessage("Status dyspozytora został zmieniony.");
+  }
+
   return (
     <main className="min-h-screen bg-[#020813] text-slate-100">
       <div className="flex min-h-screen">
         <Sidebar />
 
         <section className="flex-1 bg-[radial-gradient(circle_at_top_right,rgba(251,191,36,0.14),transparent_34%),linear-gradient(180deg,#061123_0%,#020813_44%,#020813_100%)]">
-          <header className="flex h-20 items-center justify-between border-b border-white/10 bg-[#020813]/90 px-6 shadow-2xl shadow-black/20 backdrop-blur lg:px-9">
+          <header className="flex min-h-20 flex-col gap-4 border-b border-white/10 bg-[#020813]/90 px-4 py-5 shadow-2xl shadow-black/20 backdrop-blur sm:px-6 md:flex-row md:items-center md:justify-between lg:px-9">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.25em] text-amber-300 lg:hidden">
                 King Delivery Tracker
@@ -113,15 +181,15 @@ export default function DispatcherPage() {
               </p>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="grid w-full grid-cols-[1fr_auto_auto] items-center gap-3 md:w-auto md:flex">
               <button className="hidden items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2 text-sm font-medium text-slate-400 transition hover:border-amber-400/30 hover:bg-white/[0.07] hover:text-slate-100 md:flex">
                 <Search className="h-4 w-4" />
                 Szukaj
               </button>
 
               <Link
-                href="/dispatcher/routes"
-                className="inline-flex items-center gap-2 rounded-xl bg-amber-400 px-4 py-2.5 text-sm font-bold text-slate-950 shadow-lg shadow-amber-400/10 transition hover:bg-amber-300"
+                href="/dispatcher/routes#nowa-trasa"
+                className="inline-flex min-w-0 items-center justify-center gap-2 rounded-xl bg-amber-400 px-3 py-2.5 text-sm font-bold text-slate-950 shadow-lg shadow-amber-400/10 transition hover:bg-amber-300 sm:px-4"
               >
                 <Plus className="h-4 w-4" />
                 Dodaj trasę
@@ -136,7 +204,7 @@ export default function DispatcherPage() {
             </div>
           </header>
 
-          <div className="space-y-6 p-6 lg:p-8">
+          <div className="mx-auto w-full max-w-[1600px] space-y-6 px-4 py-5 sm:px-6 lg:p-8">
             <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
               {stats.map((stat) => {
                 const Icon = stat.icon;
@@ -144,7 +212,7 @@ export default function DispatcherPage() {
                 return (
                   <article
                     key={stat.label}
-                    className="rounded-2xl border border-white/10 bg-white/[0.04] p-6 shadow-2xl shadow-black/20 backdrop-blur"
+                    className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 shadow-2xl shadow-black/20 backdrop-blur sm:p-6"
                   >
                     <div className="flex items-start gap-4">
                       <span
@@ -171,8 +239,63 @@ export default function DispatcherPage() {
               })}
             </div>
 
+            <article className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 shadow-2xl shadow-black/20 backdrop-blur sm:p-6">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-300">
+                    Status dyspozytora
+                  </p>
+                  <h2 className="mt-2 text-lg font-bold text-white">
+                    Zmień swoją dostępność
+                  </h2>
+                  <p className="mt-1 text-sm text-slate-400">
+                    Status jest widoczny dla administratora w panelu admin.
+                  </p>
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] lg:min-w-[560px]">
+                  <select
+                    value={selectedDispatcher?.id ?? ""}
+                    onChange={(event) => setSelectedDispatcherId(event.target.value)}
+                    className="rounded-xl border border-white/10 bg-[#020813]/70 px-4 py-3 text-sm font-semibold text-white outline-none focus:border-amber-400/50"
+                  >
+                    {dispatchers.length ? dispatchers.map((dispatcher) => (
+                      <option key={dispatcher.id} value={dispatcher.id}>
+                        {dispatcher.firstName} {dispatcher.lastName}
+                      </option>
+                    )) : <option value="">Brak dyspozytorów</option>}
+                  </select>
+
+                  {selectedDispatcher && (
+                    <span className={`inline-flex items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm font-bold ${dispatcherStatusStyles[selectedDispatcher.dispatcherStatus]}`}>
+                      <CircleDot className="h-4 w-4" />
+                      {dispatcherStatusLabels[selectedDispatcher.dispatcherStatus]}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div className="mt-4 grid gap-2 sm:grid-cols-4">
+                {dispatcherStatuses.map((status) => (
+                  <button
+                    key={status}
+                    type="button"
+                    disabled={!selectedDispatcher || statusSaving}
+                    onClick={() => updateDispatcherStatus(status)}
+                    className={`rounded-xl border px-4 py-3 text-sm font-bold transition disabled:cursor-not-allowed disabled:opacity-50 ${dispatcherStatusStyles[status]}`}
+                  >
+                    {dispatcherStatusLabels[status]}
+                  </button>
+                ))}
+              </div>
+
+              {dispatcherMessage && (
+                <p className="mt-3 text-sm font-semibold text-amber-200">{dispatcherMessage}</p>
+              )}
+            </article>
+
             <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
-              <article className="rounded-2xl border border-white/10 bg-white/[0.04] p-6 shadow-2xl shadow-black/20 backdrop-blur">
+              <article className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 shadow-2xl shadow-black/20 backdrop-blur sm:p-6">
                 <div className="mb-5 flex items-center justify-between gap-4">
                   <h2 className="text-lg font-bold text-white">Ostatnie trasy</h2>
                   <a href="#" className="text-sm font-semibold text-amber-300 transition hover:text-amber-200">
@@ -223,7 +346,7 @@ export default function DispatcherPage() {
                 </div>
               </article>
 
-              <article className="rounded-2xl border border-white/10 bg-white/[0.04] p-6 shadow-2xl shadow-black/20 backdrop-blur">
+              <article className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 shadow-2xl shadow-black/20 backdrop-blur sm:p-6">
                 <div className="mb-5 flex items-center justify-between gap-4">
                   <h2 className="text-lg font-bold text-white">Mapa na żywo</h2>
                   <a href="#" className="text-sm font-semibold text-amber-300 transition hover:text-amber-200">
@@ -236,7 +359,7 @@ export default function DispatcherPage() {
             </div>
 
             <div className="grid gap-6 xl:grid-cols-[0.8fr_1.2fr]">
-              <article className="rounded-2xl border border-white/10 bg-white/[0.04] p-6 shadow-2xl shadow-black/20 backdrop-blur">
+              <article className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 shadow-2xl shadow-black/20 backdrop-blur sm:p-6">
                 <h2 className="text-lg font-bold text-white">Status dostaw</h2>
 
                 <div className="mt-6 flex items-center gap-8">
@@ -246,7 +369,7 @@ export default function DispatcherPage() {
 
                   <div className="space-y-3 text-sm text-slate-300">
                     {deliveryStatuses.map(([label, value, color]) => (
-                      <div key={label} className="flex items-center gap-3">
+                      <div key={label} className="grid w-full grid-cols-[1fr_auto_auto] items-center gap-3 md:w-auto md:flex">
                         <span className={`h-3 w-3 rounded-full ${color}`} />
                         <span className="min-w-28 text-slate-400">{label}</span>
                         <span className="font-semibold">{value}</span>
@@ -256,7 +379,7 @@ export default function DispatcherPage() {
                 </div>
               </article>
 
-              <article className="rounded-2xl border border-white/10 bg-white/[0.04] p-6 shadow-2xl shadow-black/20 backdrop-blur">
+              <article className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 shadow-2xl shadow-black/20 backdrop-blur sm:p-6">
                 <h2 className="text-lg font-bold text-white">Ostatnie powiadomienia</h2>
 
                 <div className="mt-5 divide-y divide-white/10">

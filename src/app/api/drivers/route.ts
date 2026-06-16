@@ -36,3 +36,40 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: "Nie udało się zapisać kierowcy." }, { status: 500 });
   }
 }
+
+
+export async function PATCH(request: Request) {
+  const body = (await request.json().catch(() => null)) as Record<string, unknown> | null;
+
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    return NextResponse.json({ ok: false, error: "Nieprawidłowy format JSON." }, { status: 400 });
+  }
+
+  const id = clean(body.id);
+  const firstName = clean(body.firstName);
+  const lastName = clean(body.lastName);
+
+  if (!id) {
+    return NextResponse.json({ ok: false, error: "Brak identyfikatora kierowcy." }, { status: 400 });
+  }
+
+  if (!firstName || !lastName) {
+    return NextResponse.json({ ok: false, error: "Pola firstName i lastName są wymagane." }, { status: 400 });
+  }
+
+  try {
+    const driver = await prisma.driver.update({
+      where: { id },
+      data: {
+        firstName,
+        lastName,
+        phone: clean(body.phone) || null,
+        active: body.active === false ? false : true,
+      },
+    });
+    return NextResponse.json({ ok: true, driver });
+  } catch (error) {
+    console.error("Driver update failed", error);
+    return NextResponse.json({ ok: false, error: "Nie udało się zaktualizować kierowcy." }, { status: 500 });
+  }
+}
