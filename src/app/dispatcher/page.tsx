@@ -102,7 +102,7 @@ export default function DispatcherPage() {
         <Sidebar />
 
         <section className="flex-1 bg-[radial-gradient(circle_at_top_right,rgba(251,191,36,0.14),transparent_34%),linear-gradient(180deg,#061123_0%,#020813_44%,#020813_100%)]">
-          <header className="flex h-20 items-center justify-between border-b border-white/10 bg-[#020813]/90 px-6 shadow-2xl shadow-black/20 backdrop-blur lg:px-9">
+          <header className="flex min-h-20 flex-col gap-4 border-b border-white/10 bg-[#020813]/90 px-4 py-5 shadow-2xl shadow-black/20 backdrop-blur sm:px-6 md:flex-row md:items-center md:justify-between lg:px-9">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.25em] text-amber-300 lg:hidden">
                 King Delivery Tracker
@@ -113,15 +113,15 @@ export default function DispatcherPage() {
               </p>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="grid w-full grid-cols-[1fr_auto_auto] items-center gap-3 md:w-auto md:flex">
               <button className="hidden items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2 text-sm font-medium text-slate-400 transition hover:border-amber-400/30 hover:bg-white/[0.07] hover:text-slate-100 md:flex">
                 <Search className="h-4 w-4" />
                 Szukaj
               </button>
 
               <Link
-                href="/dispatcher/routes"
-                className="inline-flex items-center gap-2 rounded-xl bg-amber-400 px-4 py-2.5 text-sm font-bold text-slate-950 shadow-lg shadow-amber-400/10 transition hover:bg-amber-300"
+                href="/dispatcher/routes#nowa-trasa"
+                className="inline-flex min-w-0 items-center justify-center gap-2 rounded-xl bg-amber-400 px-3 py-2.5 text-sm font-bold text-slate-950 shadow-lg shadow-amber-400/10 transition hover:bg-amber-300 sm:px-4"
               >
                 <Plus className="h-4 w-4" />
                 Dodaj trasę
@@ -136,7 +136,7 @@ export default function DispatcherPage() {
             </div>
           </header>
 
-          <div className="space-y-6 p-6 lg:p-8">
+          <div className="mx-auto w-full max-w-[1600px] space-y-6 px-4 py-5 sm:px-6 lg:p-8">
             <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
               {stats.map((stat) => {
                 const Icon = stat.icon;
@@ -144,7 +144,7 @@ export default function DispatcherPage() {
                 return (
                   <article
                     key={stat.label}
-                    className="rounded-2xl border border-white/10 bg-white/[0.04] p-6 shadow-2xl shadow-black/20 backdrop-blur"
+                    className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 shadow-2xl shadow-black/20 backdrop-blur sm:p-6"
                   >
                     <div className="flex items-start gap-4">
                       <span
@@ -172,7 +172,7 @@ export default function DispatcherPage() {
             </div>
 
             <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
-              <article className="rounded-2xl border border-white/10 bg-white/[0.04] p-6 shadow-2xl shadow-black/20 backdrop-blur">
+              <article className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 shadow-2xl shadow-black/20 backdrop-blur sm:p-6">
                 <div className="mb-5 flex items-center justify-between gap-4">
                   <h2 className="text-lg font-bold text-white">Ostatnie trasy</h2>
                   <a href="#" className="text-sm font-semibold text-amber-300 transition hover:text-amber-200">
@@ -223,7 +223,7 @@ export default function DispatcherPage() {
                 </div>
               </article>
 
-              <article className="rounded-2xl border border-white/10 bg-white/[0.04] p-6 shadow-2xl shadow-black/20 backdrop-blur">
+              <article className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 shadow-2xl shadow-black/20 backdrop-blur sm:p-6">
                 <div className="mb-5 flex items-center justify-between gap-4">
                   <h2 className="text-lg font-bold text-white">Mapa na żywo</h2>
                   <a href="#" className="text-sm font-semibold text-amber-300 transition hover:text-amber-200">
@@ -236,7 +236,7 @@ export default function DispatcherPage() {
             </div>
 
             <div className="grid gap-6 xl:grid-cols-[0.8fr_1.2fr]">
-              <article className="rounded-2xl border border-white/10 bg-white/[0.04] p-6 shadow-2xl shadow-black/20 backdrop-blur">
+              <article className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 shadow-2xl shadow-black/20 backdrop-blur sm:p-6">
                 <h2 className="text-lg font-bold text-white">Status dostaw</h2>
 
                 <div className="mt-6 flex items-center gap-8">
@@ -246,7 +246,7 @@ export default function DispatcherPage() {
 
                   <div className="space-y-3 text-sm text-slate-300">
                     {deliveryStatuses.map(([label, value, color]) => (
-                      <div key={label} className="flex items-center gap-3">
+                      <div key={label} className="grid w-full grid-cols-[1fr_auto_auto] items-center gap-3 md:w-auto md:flex">
                         <span className={`h-3 w-3 rounded-full ${color}`} />
                         <span className="min-w-28 text-slate-400">{label}</span>
                         <span className="font-semibold">{value}</span>
@@ -256,7 +256,7 @@ export default function DispatcherPage() {
                 </div>
               </article>
 
-              <article className="rounded-2xl border border-white/10 bg-white/[0.04] p-6 shadow-2xl shadow-black/20 backdrop-blur">
+              <article className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 shadow-2xl shadow-black/20 backdrop-blur sm:p-6">
                 <h2 className="text-lg font-bold text-white">Ostatnie powiadomienia</h2>
 
                 <div className="mt-5 divide-y divide-white/10">
