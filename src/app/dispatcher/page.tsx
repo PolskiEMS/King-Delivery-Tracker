@@ -1,3 +1,4 @@
+import Link from "next/link";
 import {
   Bell,
   CheckCircle2,
@@ -118,11 +119,13 @@ export default function DispatcherPage() {
                 Szukaj
               </button>
 
-              <button className="inline-flex items-center gap-2 rounded-xl bg-amber-400 px-4 py-2.5 text-sm font-bold text-[#020813] shadow-lg shadow-amber-500/20 transition hover:bg-amber-300">
+              <Link
+                href="/dispatcher/routes"
+                className="inline-flex items-center gap-2 rounded-xl bg-amber-400 px-4 py-2.5 text-sm font-bold text-slate-950 shadow-lg shadow-amber-400/10 transition hover:bg-amber-300"
+              >
                 <Plus className="h-4 w-4" />
                 Dodaj trasę
-                <link rel="app/routes/page.tsx" />
-              </button>
+              </Link>
 
               <button className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-slate-400 transition hover:border-amber-400/30 hover:bg-white/[0.07] hover:text-amber-300" aria-label="Powiadomienia">
                 <Bell className="h-5 w-5" />
