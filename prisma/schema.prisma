@@ -22,18 +22,18 @@ enum OrderStatus {
   CANCELLED
 }
 
+enum DeliveryStatus {
+  PENDING
+  IN_PROGRESS
+  DELIVERED
+  PROBLEM
+  CANCELLED
+}
+
 enum RouteStatus {
   PLANNED
   IN_PROGRESS
   COMPLETED
-  CANCELLED
-}
-
-enum DeliveryStatus {
-  PENDING
-  IN_DELIVERY
-  DELIVERED
-  PROBLEM
   CANCELLED
 }
 
@@ -91,7 +91,6 @@ model Order {
 
   @@index([createdAt])
 }
-
 
 model Route {
   id          String      @id @default(cuid())
