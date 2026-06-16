@@ -188,13 +188,13 @@ export default function LoginPage() {
                 </Button>
               </form>
 
-              <div className="my-8 flex items-center gap-4 text-xs text-slate-500">
+              <div className="my-6 flex items-center gap-4 text-xs text-slate-500 sm:my-8">
                 <span className="h-px flex-1 bg-white/10" />
                 <span>lub kontynuuj jako</span>
                 <span className="h-px flex-1 bg-white/10" />
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 gap-3 min-[380px]:grid-cols-3">
                 {roles.map((role) => {
                   const Icon = role.icon;
 
@@ -202,13 +202,13 @@ export default function LoginPage() {
                     <Link
                       key={role.name}
                       href={role.href}
-                      className="group rounded-xl border border-white/10 bg-white/[0.04] p-4 text-center transition hover:-translate-y-0.5 hover:border-amber-400/35 hover:bg-white/[0.07]"
+                      className="group flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.04] p-4 text-left transition hover:-translate-y-0.5 hover:border-amber-400/35 hover:bg-white/[0.07] min-[380px]:block min-[380px]:text-center"
                     >
-                      <span className={`mx-auto flex h-10 w-10 items-center justify-center rounded-lg ${role.glow}`}>
+                      <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg min-[380px]:mx-auto ${role.glow}`}>
                         <Icon className={`h-5 w-5 ${role.color}`} />
                       </span>
 
-                      <span className="mt-3 block text-xs font-semibold text-slate-200 group-hover:text-white">
+                      <span className="block text-xs font-semibold text-slate-200 group-hover:text-white min-[380px]:mt-3">
                         {role.name}
                       </span>
                     </Link>
