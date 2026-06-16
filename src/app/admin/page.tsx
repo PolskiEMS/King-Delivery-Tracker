@@ -30,7 +30,7 @@ const cards = [
 
 export default function AdminPage() {
   return (
-    <main className="min-h-screen bg-slate-100 p-6 text-slate-900 lg:p-10">
+    <main className="min-h-screen bg-slate-100 p-4 text-slate-900 sm:p-6 lg:p-10">
       <section className="mx-auto max-w-6xl">
         <Link
           href="/"
@@ -40,11 +40,11 @@ export default function AdminPage() {
           Powrót do logowania
         </Link>
 
-        <div className="mt-8 rounded-2xl bg-[#07111d] p-8 text-white shadow-2xl shadow-slate-300">
+        <div className="mt-6 rounded-2xl bg-[#07111d] p-5 text-white shadow-2xl shadow-slate-300 sm:mt-8 sm:p-8">
           <p className="text-sm font-semibold uppercase tracking-[0.3em] text-amber-300">
             Panel administratora
           </p>
-          <h1 className="mt-4 text-4xl font-black">
+          <h1 className="mt-4 text-3xl font-black sm:text-4xl">
             Zarządzanie systemem King Delivery Tracker
           </h1>
           <p className="mt-4 max-w-2xl text-slate-300">
@@ -54,14 +54,14 @@ export default function AdminPage() {
           </p>
         </div>
 
-        <div className="mt-8 grid gap-5 md:grid-cols-2">
+        <div className="mt-6 grid gap-4 sm:mt-8 sm:grid-cols-2 lg:gap-5">
           {cards.map((card) => {
             const Icon = card.icon;
 
             return (
               <article
                 key={card.title}
-                className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm"
+                className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6"
               >
                 <span
                   className={`flex h-12 w-12 items-center justify-center rounded-xl ${card.color}`}
