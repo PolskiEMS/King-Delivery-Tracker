@@ -8,6 +8,8 @@ import {
   CircleDot,
   Database,
   ShieldCheck,
+  Pencil,
+  Save,
   Trash2,
   Truck,
   UserCog,
@@ -118,6 +120,9 @@ export default function AdminPage() {
   const [message, setMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState<UserForm>(emptyForm);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const stats = useMemo(() => {
@@ -152,22 +157,71 @@ export default function AdminPage() {
     setIsSaving(true);
     setMessage(null);
 
-    const response = await fetch("/api/admin/users", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
-    });
-    const data = (await response.json()) as { user?: AdminUser; message?: string };
-    setIsSaving(false);
+    try {
+      const response = await fetch("/api/admin/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      const data = (await response.json()) as { user?: AdminUser; message?: string };
 
-    if (!response.ok || !data.user) {
-      setMessage(data.message ?? "Nie udało się dodać użytkownika.");
-      return;
+      if (!response.ok || !data.user) {
+        setMessage(data.message ?? "Nie udało się dodać użytkownika.");
+        return;
+      }
+
+      setUsers((current) => [data.user!, ...current]);
+      setForm(emptyForm);
+      setMessage("Użytkownik został dodany do centrum zarządzania.");
+    } catch {
+      setMessage("Nie udało się połączyć z API dodawania użytkowników.");
+    } finally {
+      setIsSaving(false);
     }
+  }
 
-    setUsers((current) => [data.user!, ...current]);
-    setForm(emptyForm);
-    setMessage("Użytkownik został dodany do centrum zarządzania.");
+  function startEditing(user: AdminUser) {
+    setEditingId(user.id);
+    setEditForm({
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      password: "",
+      role: user.role,
+    });
+    setMessage(null);
+  }
+
+  async function updateUser(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!editingId) return;
+
+    setUpdatingId(editingId);
+    setMessage(null);
+
+    try {
+      const response = await fetch("/api/admin/users", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: editingId, ...editForm }),
+      });
+      const data = (await response.json()) as { user?: AdminUser; message?: string };
+
+      if (!response.ok || !data.user) {
+        setMessage(data.message ?? "Nie udało się zapisać zmian użytkownika.");
+        return;
+      }
+
+      setUsers((current) => current.map((user) => (user.id === data.user!.id ? data.user! : user)));
+      setEditingId(null);
+      setEditForm(emptyForm);
+      setMessage("Dane użytkownika i rola zostały zaktualizowane.");
+    } catch {
+      setMessage("Nie udało się połączyć z API edycji użytkowników.");
+    } finally {
+      setUpdatingId(null);
+    }
   }
 
   async function deleteUser(id: string) {
@@ -287,13 +341,44 @@ export default function AdminPage() {
                     {users.length ? users.map((user) => (
                       <tr key={user.id}>
                         <td className="py-4">
-                          <p className="font-bold text-white">{user.firstName} {user.lastName}</p>
-                          <p className="text-xs text-slate-500">{user.email}</p>
+                          {editingId === user.id ? (
+                            <form id={`edit-user-${user.id}`} onSubmit={updateUser} className="grid gap-2 sm:grid-cols-2">
+                              <input required value={editForm.firstName} onChange={(event) => setEditForm((current) => ({ ...current, firstName: event.target.value }))} placeholder="Imię" className="rounded-lg border border-white/10 bg-[#020813]/70 px-3 py-2 text-xs font-semibold text-white outline-none focus:border-amber-400/50" />
+                              <input required value={editForm.lastName} onChange={(event) => setEditForm((current) => ({ ...current, lastName: event.target.value }))} placeholder="Nazwisko" className="rounded-lg border border-white/10 bg-[#020813]/70 px-3 py-2 text-xs font-semibold text-white outline-none focus:border-amber-400/50" />
+                              <input required type="email" value={editForm.email} onChange={(event) => setEditForm((current) => ({ ...current, email: event.target.value }))} placeholder="email@firma.com" className="rounded-lg border border-white/10 bg-[#020813]/70 px-3 py-2 text-xs font-semibold text-white outline-none focus:border-amber-400/50 sm:col-span-2" />
+                              <input type="password" minLength={8} value={editForm.password} onChange={(event) => setEditForm((current) => ({ ...current, password: event.target.value }))} placeholder="Nowe hasło (opcjonalnie)" className="rounded-lg border border-white/10 bg-[#020813]/70 px-3 py-2 text-xs font-semibold text-white outline-none focus:border-amber-400/50 sm:col-span-2" />
+                            </form>
+                          ) : (
+                            <>
+                              <p className="font-bold text-white">{user.firstName} {user.lastName}</p>
+                              <p className="text-xs text-slate-500">{user.email}</p>
+                            </>
+                          )}
                         </td>
-                        <td className="py-4"><span className={`rounded-full border px-3 py-1 text-xs font-bold ${roleStyles[user.role]}`}>{roleLabels[user.role]}</span></td>
+                        <td className="py-4">
+                          {editingId === user.id ? (
+                            <select form={`edit-user-${user.id}`} value={editForm.role} onChange={(event) => setEditForm((current) => ({ ...current, role: event.target.value as UserRole }))} className="rounded-xl border border-white/10 bg-[#020813]/70 px-3 py-2 text-xs font-bold text-white outline-none focus:border-amber-400/50">
+                              {Object.entries(roleLabels).map(([role, label]) => <option key={role} value={role}>{label}</option>)}
+                            </select>
+                          ) : (
+                            <span className={`rounded-full border px-3 py-1 text-xs font-bold ${roleStyles[user.role]}`}>{roleLabels[user.role]}</span>
+                          )}
+                        </td>
                         <td className="py-4"><span className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-bold ${statusStyles[user.dispatcherStatus]}`}><CircleDot className="h-3.5 w-3.5" />{user.role === "DISPATCHER" ? statusLabels[user.dispatcherStatus] : "Nie dotyczy"}</span></td>
                         <td className="py-4 text-slate-400">{new Intl.DateTimeFormat("pl-PL").format(new Date(user.createdAt))}</td>
-                        <td className="py-4 text-right"><button type="button" disabled={deletingId === user.id} onClick={() => deleteUser(user.id)} className="inline-flex items-center gap-2 rounded-xl border border-red-400/20 bg-red-400/10 px-3 py-2 text-xs font-bold text-red-200 transition hover:border-red-300/40 hover:bg-red-400/15 disabled:cursor-not-allowed disabled:opacity-60"><Trash2 className="h-4 w-4" />Usuń</button></td>
+                        <td className="py-4 text-right">
+                          <div className="flex flex-wrap justify-end gap-2">
+                            {editingId === user.id ? (
+                              <>
+                                <button type="submit" form={`edit-user-${user.id}`} disabled={updatingId === user.id} className="inline-flex items-center gap-2 rounded-xl border border-emerald-400/20 bg-emerald-400/10 px-3 py-2 text-xs font-bold text-emerald-200 transition hover:border-emerald-300/40 hover:bg-emerald-400/15 disabled:cursor-not-allowed disabled:opacity-60"><Save className="h-4 w-4" />Zapisz</button>
+                                <button type="button" onClick={() => { setEditingId(null); setEditForm(emptyForm); }} className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-bold text-slate-300 transition hover:border-white/20 hover:bg-white/10">Anuluj</button>
+                              </>
+                            ) : (
+                              <button type="button" onClick={() => startEditing(user)} className="inline-flex items-center gap-2 rounded-xl border border-amber-400/20 bg-amber-400/10 px-3 py-2 text-xs font-bold text-amber-200 transition hover:border-amber-300/40 hover:bg-amber-400/15"><Pencil className="h-4 w-4" />Edytuj</button>
+                            )}
+                            <button type="button" disabled={deletingId === user.id || updatingId === user.id} onClick={() => deleteUser(user.id)} className="inline-flex items-center gap-2 rounded-xl border border-red-400/20 bg-red-400/10 px-3 py-2 text-xs font-bold text-red-200 transition hover:border-red-300/40 hover:bg-red-400/15 disabled:cursor-not-allowed disabled:opacity-60"><Trash2 className="h-4 w-4" />Usuń</button>
+                          </div>
+                        </td>
                       </tr>
                     )) : (
                       <tr><td colSpan={5} className="py-10 text-center text-sm text-slate-500">Brak użytkowników do wyświetlenia.</td></tr>
