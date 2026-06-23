@@ -2,8 +2,8 @@
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { LogoutButton } from "@/components/auth/logout-button";
 import {
-  ArrowLeft,
   BarChart3,
   CircleDot,
   Database,
@@ -139,6 +139,20 @@ export default function AdminPage() {
     ];
   }, [users]);
 
+
+  const roleChart = useMemo(() => {
+    const counts = users.reduce<Record<UserRole, number>>((acc, user) => ({ ...acc, [user.role]: acc[user.role] + 1 }), { ADMIN: 0, DISPATCHER: 0, DRIVER: 0 });
+    const max = Math.max(...Object.values(counts), 1);
+    return (Object.entries(counts) as [UserRole, number][]).map(([role, value]) => ({ label: roleLabels[role], value, width: `${Math.max(8, (value / max) * 100)}%`, style: roleStyles[role] }));
+  }, [users]);
+
+  const dispatcherStatusChart = useMemo(() => {
+    const dispatchers = users.filter((user) => user.role === "DISPATCHER");
+    const counts = dispatchers.reduce<Record<DispatcherStatus, number>>((acc, user) => ({ ...acc, [user.dispatcherStatus]: acc[user.dispatcherStatus] + 1 }), { AVAILABLE: 0, ACTIVE: 0, INACTIVE: 0, BUSY: 0, AWAY: 0, OFFLINE: 0 });
+    const max = Math.max(...Object.values(counts), 1);
+    return (Object.entries(counts) as [DispatcherStatus, number][]).filter(([, value]) => value > 0).map(([status, value]) => ({ label: statusLabels[status], value, width: `${Math.max(8, (value / max) * 100)}%`, style: statusStyles[status] }));
+  }, [users]);
+
   const loadUsers = useCallback(async () => {
     setIsLoading(true);
     const response = await fetch("/api/admin/users", { cache: "no-store" });
@@ -250,10 +264,7 @@ export default function AdminPage() {
       <section className="min-h-screen bg-[radial-gradient(circle_at_top_right,rgba(251,191,36,0.16),transparent_32%),linear-gradient(180deg,#061123_0%,#020813_46%,#020813_100%)] px-4 py-5 sm:px-6 lg:px-10">
         <div className="mx-auto max-w-[1600px] space-y-6">
           <header className="rounded-3xl border border-white/10 bg-[#020813]/90 p-5 shadow-2xl shadow-black/30 backdrop-blur sm:p-7">
-            <Link href="/" className="inline-flex items-center gap-2 text-sm font-semibold text-amber-300 transition hover:text-amber-200">
-              <ArrowLeft className="h-4 w-4" />
-              Powrót do logowania
-            </Link>
+            <LogoutButton label="Wyloguj z konta" />
 
             <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_auto] lg:items-end">
               <div>
@@ -290,6 +301,35 @@ export default function AdminPage() {
                 <p className="mt-1 text-xs text-slate-500">{stat.hint}</p>
               </article>
             ))}
+          </div>
+
+
+          <div className="grid gap-6 xl:grid-cols-2">
+            <article className="rounded-2xl border border-white/10 bg-white/[0.04] p-5 shadow-2xl shadow-black/20 backdrop-blur sm:p-6">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-300">Wykres ról</p>
+              <h2 className="mt-2 text-xl font-black text-white">Struktura kont w systemie</h2>
+              <div className="mt-6 space-y-4">
+                {roleChart.map((item) => (
+                  <div key={item.label}>
+                    <div className="mb-2 flex items-center justify-between text-sm"><span className="font-semibold text-slate-300">{item.label}</span><span className="font-black text-white">{item.value}</span></div>
+                    <div className="h-3 overflow-hidden rounded-full bg-slate-800"><div className="h-full rounded-full bg-amber-400" style={{ width: item.width }} /></div>
+                  </div>
+                ))}
+              </div>
+            </article>
+
+            <article className="rounded-2xl border border-white/10 bg-white/[0.04] p-5 shadow-2xl shadow-black/20 backdrop-blur sm:p-6">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-300">Wykres statusów</p>
+              <h2 className="mt-2 text-xl font-black text-white">Dostępność dyspozytorów</h2>
+              <div className="mt-6 space-y-4">
+                {dispatcherStatusChart.length ? dispatcherStatusChart.map((item) => (
+                  <div key={item.label}>
+                    <div className="mb-2 flex items-center justify-between text-sm"><span className="font-semibold text-slate-300">{item.label}</span><span className="font-black text-white">{item.value}</span></div>
+                    <div className="h-3 overflow-hidden rounded-full bg-slate-800"><div className="h-full rounded-full bg-emerald-400" style={{ width: item.width }} /></div>
+                  </div>
+                )) : <p className="rounded-2xl border border-white/10 bg-[#020813]/60 p-5 text-sm text-slate-400">Brak dyspozytorów do pokazania na wykresie.</p>}
+              </div>
+            </article>
           </div>
 
           <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
