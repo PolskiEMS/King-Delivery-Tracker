@@ -1,6 +1,10 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   Bell,
+  FileSpreadsheet,
   LogIn,
   LayoutDashboard,
   PackageCheck,
@@ -16,13 +20,45 @@ const menu = [
   { label: "Trasy", href: "/dispatcher/routes", icon: Route },
   { label: "Kierowcy", href: "/dispatcher/drivers", icon: Users },
   { label: "Dostawy", href: "/dispatcher/deliveries", icon: Truck },
+  { label: "Import danych", href: "/dispatcher/import", icon: FileSpreadsheet },
   { label: "Powiadomienia", href: "/dispatcher/notifications", icon: Bell },
   { label: "Ustawienia", href: "/dispatcher/settings", icon: Settings },
 ];
 
 const mobileMenu = menu.slice(0, 5);
 
+type StoredUser = {
+  firstName?: string;
+  lastName?: string;
+  role?: string;
+};
+
+function getDispatcherPanelLabel(user: StoredUser | null) {
+  if (user?.role !== "DISPATCHER") {
+    return "Dyspozytor";
+  }
+
+  const fullName = [user.firstName, user.lastName].filter(Boolean).join(" ").trim();
+  return fullName || "Dyspozytor";
+}
+
 export function Sidebar() {
+  const [currentUser, setCurrentUser] = useState<StoredUser | null>(null);
+
+  useEffect(() => {
+    const storedUser = window.localStorage.getItem("kingDeliveryCurrentUser");
+
+    if (!storedUser) return;
+
+    try {
+      setCurrentUser(JSON.parse(storedUser) as StoredUser);
+    } catch {
+      window.localStorage.removeItem("kingDeliveryCurrentUser");
+    }
+  }, []);
+
+  const panelLabel = getDispatcherPanelLabel(currentUser);
+
   return (
     <>
       <aside className="hidden w-72 border-r border-white/10 bg-[#020813] p-6 text-slate-100 shadow-2xl shadow-black/30 lg:block">
@@ -38,7 +74,7 @@ export function Sidebar() {
               Panel
             </p>
             <p className="mt-1 text-sm font-semibold text-slate-100">
-              Dyspozytor
+              {panelLabel}
             </p>
           </div>
         </div>
@@ -64,6 +100,7 @@ export function Sidebar() {
 
         <Link
           href="/"
+          onClick={() => window.localStorage.removeItem("kingDeliveryCurrentUser")}
           className="mt-8 flex items-center gap-3 rounded-2xl border border-amber-400/20 bg-amber-400/10 px-4 py-3 text-sm font-bold text-amber-200 transition hover:border-amber-300/40 hover:bg-amber-400/15 hover:text-amber-100"
         >
           <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-amber-400/20 bg-[#020813]/60 text-amber-300">

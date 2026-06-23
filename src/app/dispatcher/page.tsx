@@ -65,6 +65,7 @@ const notifications: string[][] = [];
 
 type DispatcherStatus = "AVAILABLE" | "BUSY" | "AWAY" | "OFFLINE";
 type Dispatcher = { id: string; email: string; firstName: string; lastName: string; dispatcherStatus: DispatcherStatus };
+type StoredUser = { id?: string; firstName?: string; lastName?: string; role?: string };
 
 const dispatcherStatusLabels: Record<DispatcherStatus, string> = {
   AVAILABLE: "Dostępny",
@@ -120,14 +121,29 @@ function MapPreview() {
 
 export default function DispatcherPage() {
   const [dispatchers, setDispatchers] = useState<Dispatcher[]>([]);
+  const [currentUser, setCurrentUser] = useState<StoredUser | null>(null);
   const [selectedDispatcherId, setSelectedDispatcherId] = useState("");
   const [dispatcherMessage, setDispatcherMessage] = useState<string | null>(null);
   const [statusSaving, setStatusSaving] = useState(false);
 
-  const selectedDispatcher = useMemo(
-    () => dispatchers.find((dispatcher) => dispatcher.id === selectedDispatcherId) ?? dispatchers[0],
-    [dispatchers, selectedDispatcherId],
+  const loggedDispatcher = useMemo(
+    () => dispatchers.find((dispatcher) => dispatcher.id === currentUser?.id),
+    [currentUser?.id, dispatchers],
   );
+
+  const visibleDispatchers = useMemo(
+    () => (loggedDispatcher ? [loggedDispatcher] : dispatchers),
+    [dispatchers, loggedDispatcher],
+  );
+
+  const selectedDispatcher = useMemo(
+    () => visibleDispatchers.find((dispatcher) => dispatcher.id === selectedDispatcherId) ?? visibleDispatchers[0],
+    [visibleDispatchers, selectedDispatcherId],
+  );
+
+  const dispatcherPanelTitle = selectedDispatcher
+    ? `Panel ${selectedDispatcher.firstName} ${selectedDispatcher.lastName}`
+    : "Panel dyspozytora";
 
   const loadDispatchers = useCallback(async () => {
     const response = await fetch("/api/dispatchers", { cache: "no-store" });
@@ -138,8 +154,30 @@ export default function DispatcherPage() {
   }, []);
 
   useEffect(() => {
+    const storedUser = window.localStorage.getItem("kingDeliveryCurrentUser");
+
+    if (!storedUser) return;
+
+    try {
+      const parsedUser = JSON.parse(storedUser) as StoredUser;
+      setCurrentUser(parsedUser);
+      if (parsedUser.role === "DISPATCHER" && parsedUser.id) {
+        setSelectedDispatcherId(parsedUser.id);
+      }
+    } catch {
+      window.localStorage.removeItem("kingDeliveryCurrentUser");
+    }
+  }, []);
+
+  useEffect(() => {
     void loadDispatchers();
   }, [loadDispatchers]);
+
+  useEffect(() => {
+    if (loggedDispatcher) {
+      setSelectedDispatcherId(loggedDispatcher.id);
+    }
+  }, [loggedDispatcher]);
 
   async function updateDispatcherStatus(dispatcherStatus: DispatcherStatus) {
     if (!selectedDispatcher) return;
@@ -175,7 +213,7 @@ export default function DispatcherPage() {
               <p className="text-xs font-semibold uppercase tracking-[0.25em] text-amber-300 lg:hidden">
                 King Delivery Tracker
               </p>
-              <h1 className="text-2xl font-bold text-white">Pulpit</h1>
+              <h1 className="text-2xl font-bold text-white">{dispatcherPanelTitle}</h1>
               <p className="mt-1 hidden text-sm text-slate-400 sm:block">
                 Operacyjny widok tras, dostaw i powiadomień.
               </p>
@@ -259,7 +297,7 @@ export default function DispatcherPage() {
                     onChange={(event) => setSelectedDispatcherId(event.target.value)}
                     className="rounded-xl border border-white/10 bg-[#020813]/70 px-4 py-3 text-sm font-semibold text-white outline-none focus:border-amber-400/50"
                   >
-                    {dispatchers.length ? dispatchers.map((dispatcher) => (
+                    {visibleDispatchers.length ? visibleDispatchers.map((dispatcher) => (
                       <option key={dispatcher.id} value={dispatcher.id}>
                         {dispatcher.firstName} {dispatcher.lastName}
                       </option>

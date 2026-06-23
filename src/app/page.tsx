@@ -84,6 +84,10 @@ export default function LoginPage() {
         return;
       }
 
+      if (typeof window !== "undefined" && data.user) {
+        window.localStorage.setItem("kingDeliveryCurrentUser", JSON.stringify(data.user));
+      }
+
       router.push(data.redirectTo);
     } catch {
       setError("Nie udało się połączyć z serwerem.");
