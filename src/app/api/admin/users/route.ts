@@ -175,66 +175,6 @@ export async function PUT(request: Request) {
   }
 }
 
-export async function PUT(request: Request) {
-  const body = (await request.json().catch(() => null)) as Record<string, unknown> | null;
-
-  if (!body || typeof body !== "object" || Array.isArray(body)) {
-    return NextResponse.json({ ok: false, message: "Nieprawidłowy format JSON." }, { status: 400 });
-  }
-
-  const id = clean(body.id);
-  const firstName = clean(body.firstName);
-  const lastName = clean(body.lastName);
-  const email = clean(body.email).toLowerCase();
-  const password = typeof body.password === "string" ? body.password : "";
-  const role = normalizeRole(body.role);
-
-  if (!id || !firstName || !lastName || !email || !role) {
-    return NextResponse.json({ ok: false, message: "Uzupełnij wszystkie wymagane pola edycji." }, { status: 400 });
-  }
-
-  if (password && password.length < 8) {
-    return NextResponse.json({ ok: false, message: "Nowe hasło musi mieć minimum 8 znaków." }, { status: 400 });
-  }
-
-  const existingUser = await prisma.user.findFirst({
-    where: { email, NOT: { id } },
-    select: { id: true },
-  });
-
-  if (existingUser) {
-    return NextResponse.json({ ok: false, message: "Inny użytkownik korzysta już z tego adresu email." }, { status: 409 });
-  }
-
-  const updateData: Prisma.UserUpdateInput = {
-    firstName,
-    lastName,
-    email,
-    role: role as UserRole,
-  };
-
-  if (role !== "DISPATCHER") {
-    updateData.dispatcherStatus = "OFFLINE";
-  }
-
-  if (password) {
-    updateData.passwordHash = await bcrypt.hash(password, 10);
-  }
-
-  try {
-    const user = await prisma.user.update({
-      where: { id },
-      data: updateData,
-      select: userSelect,
-    });
-
-    return NextResponse.json({ ok: true, message: "Użytkownik został zaktualizowany.", user });
-  } catch (error) {
-    console.error("ADMIN_USER_UPDATE_ERROR:", error);
-    return NextResponse.json({ ok: false, message: "Nie udało się zaktualizować użytkownika." }, { status: 500 });
-  }
-}
-
 export async function DELETE(request: Request) {
   const { searchParams } = new URL(request.url);
   const id = clean(searchParams.get("id"));
