@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { LogoutButton } from "@/components/auth/logout-button";
 import {
   Bell,
   FileSpreadsheet,
-  LogIn,
   LayoutDashboard,
   PackageCheck,
   Route,
@@ -98,16 +98,10 @@ export function Sidebar() {
           })}
         </nav>
 
-        <Link
-          href="/"
-          onClick={() => window.localStorage.removeItem("kingDeliveryCurrentUser")}
+        <LogoutButton
+          label="Wyloguj z konta"
           className="mt-8 flex items-center gap-3 rounded-2xl border border-amber-400/20 bg-amber-400/10 px-4 py-3 text-sm font-bold text-amber-200 transition hover:border-amber-300/40 hover:bg-amber-400/15 hover:text-amber-100"
-        >
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-amber-400/20 bg-[#020813]/60 text-amber-300">
-            <LogIn className="h-5 w-5" />
-          </span>
-          Powrót do logowania
-        </Link>
+        />
 
         <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
