@@ -75,3 +75,46 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: "Nie udało się zapisać trasy." }, { status: 500 });
   }
 }
+
+export async function PATCH(request: Request) {
+  const body = (await request.json().catch(() => null)) as Record<string, unknown> | null;
+
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    return NextResponse.json({ ok: false, error: "Nieprawidłowy format JSON." }, { status: 400 });
+  }
+
+  const id = clean(body.id);
+  const routeNumber = clean(body.routeNumber);
+  const name = clean(body.name);
+
+  if (!id) {
+    return NextResponse.json({ ok: false, error: "Brak identyfikatora trasy." }, { status: 400 });
+  }
+
+  if (!routeNumber || !name) {
+    return NextResponse.json({ ok: false, error: "Pola routeNumber i name są wymagane." }, { status: 400 });
+  }
+
+  try {
+    const route = await prisma.route.update({
+      where: { id },
+      data: {
+        routeNumber,
+        name,
+        plannedDate: clean(body.plannedDate) ? new Date(clean(body.plannedDate)) : null,
+        driverId: clean(body.driverId) || null,
+        vehicleId: clean(body.vehicleId) || null,
+        notes: clean(body.notes) || null,
+      },
+      include: { driver: true, vehicle: true, deliveries: { include: { order: true }, orderBy: { sequence: "asc" } } },
+    });
+
+    return NextResponse.json({ ok: true, route });
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      return NextResponse.json({ ok: false, error: "Trasa o takim numerze już istnieje." }, { status: 409 });
+    }
+    console.error("Route update failed", error);
+    return NextResponse.json({ ok: false, error: "Nie udało się zaktualizować trasy." }, { status: 500 });
+  }
+}
