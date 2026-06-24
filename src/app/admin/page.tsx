@@ -12,6 +12,8 @@ import {
   Save,
   Trash2,
   Truck,
+  Eye,
+  EyeOff,
   UserCog,
   UserPlus,
   Users,
@@ -28,6 +30,7 @@ type AdminUser = {
   role: UserRole;
   dispatcherStatus: DispatcherStatus;
   createdAt: string;
+  password: string;
 };
 
 type UserForm = {
@@ -124,6 +127,7 @@ export default function AdminPage() {
   const [editForm, setEditForm] = useState<UserForm>(emptyForm);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [visiblePasswordIds, setVisiblePasswordIds] = useState<Set<string>>(new Set());
 
   const stats = useMemo(() => {
     const byRole = users.reduce<Record<UserRole, number>>(
@@ -203,7 +207,26 @@ export default function AdminPage() {
       password: "",
       role: user.role,
     });
+    setVisiblePasswordIds((current) => {
+      const next = new Set(current);
+      next.delete(user.id);
+      return next;
+    });
     setMessage(null);
+  }
+
+  function togglePasswordVisibility(id: string) {
+    setVisiblePasswordIds((current) => {
+      const next = new Set(current);
+
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+
+      return next;
+    });
   }
 
   async function updateUser(event: FormEvent<HTMLFormElement>) {
@@ -230,6 +253,11 @@ export default function AdminPage() {
       setUsers((current) => current.map((user) => (user.id === data.user!.id ? data.user! : user)));
       setEditingId(null);
       setEditForm(emptyForm);
+      setVisiblePasswordIds((current) => {
+        const next = new Set(current);
+        next.delete(data.user!.id);
+        return next;
+      });
       setMessage("Dane użytkownika i rola zostały zaktualizowane.");
     } catch {
       setMessage("Nie udało się połączyć z API edycji użytkowników.");
@@ -392,6 +420,13 @@ export default function AdminPage() {
                             <>
                               <p className="font-bold text-white">{user.firstName} {user.lastName}</p>
                               <p className="text-xs text-slate-500">{user.email}</p>
+                              <div className="mt-2 inline-flex items-center gap-2 rounded-full border border-white/10 bg-[#020813]/70 px-3 py-1 text-xs font-semibold text-slate-400">
+                                <span>Hasło:</span>
+                                <span className="font-mono text-slate-200">{visiblePasswordIds.has(user.id) ? user.password || "Brak zapisanego hasła" : "••••••••"}</span>
+                                <button type="button" onClick={() => togglePasswordVisibility(user.id)} className="text-sky-300 transition hover:text-sky-200" aria-label={visiblePasswordIds.has(user.id) ? "Ukryj hasło" : "Pokaż hasło"}>
+                                  {visiblePasswordIds.has(user.id) ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                                </button>
+                              </div>
                             </>
                           )}
                         </td>
@@ -414,7 +449,9 @@ export default function AdminPage() {
                                 <button type="button" onClick={() => { setEditingId(null); setEditForm(emptyForm); }} className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-bold text-slate-300 transition hover:border-white/20 hover:bg-white/10">Anuluj</button>
                               </>
                             ) : (
-                              <button type="button" onClick={() => startEditing(user)} className="inline-flex items-center gap-2 rounded-xl border border-amber-400/20 bg-amber-400/10 px-3 py-2 text-xs font-bold text-amber-200 transition hover:border-amber-300/40 hover:bg-amber-400/15"><Pencil className="h-4 w-4" />Edytuj</button>
+                              <>
+                                <button type="button" onClick={(event) => { event.preventDefault(); event.stopPropagation(); startEditing(user); }} className="inline-flex items-center gap-2 rounded-xl border border-amber-400/20 bg-amber-400/10 px-3 py-2 text-xs font-bold text-amber-200 transition hover:border-amber-300/40 hover:bg-amber-400/15"><Pencil className="h-4 w-4" />Edytuj</button>
+                              </>
                             )}
                             <button type="button" disabled={deletingId === user.id || updatingId === user.id} onClick={() => deleteUser(user.id)} className="inline-flex items-center gap-2 rounded-xl border border-red-400/20 bg-red-400/10 px-3 py-2 text-xs font-bold text-red-200 transition hover:border-red-300/40 hover:bg-red-400/15 disabled:cursor-not-allowed disabled:opacity-60"><Trash2 className="h-4 w-4" />Usuń</button>
                           </div>

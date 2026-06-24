@@ -13,6 +13,7 @@ type Role = (typeof roles)[number];
 const userSelect = {
   id: true,
   email: true,
+  password: true,
   firstName: true,
   lastName: true,
   role: true,
@@ -109,6 +110,7 @@ export async function POST(request: Request) {
       data: {
         ...getUserWriteData(firstName, lastName, email, role),
         passwordHash,
+        password,
       },
       select: userSelect,
     });
@@ -160,6 +162,7 @@ export async function PUT(request: Request) {
 
     if (password) {
       updateData.passwordHash = await bcrypt.hash(password, 10);
+      updateData.password = password;
     }
 
     const user = await prisma.user.update({
