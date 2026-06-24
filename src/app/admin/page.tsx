@@ -12,8 +12,6 @@ import {
   Save,
   Trash2,
   Truck,
-  Eye,
-  EyeOff,
   UserCog,
   UserPlus,
   Users,
@@ -30,7 +28,6 @@ type AdminUser = {
   role: UserRole;
   dispatcherStatus: DispatcherStatus;
   createdAt: string;
-  password: string;
 };
 
 type UserForm = {
@@ -127,7 +124,6 @@ export default function AdminPage() {
   const [editForm, setEditForm] = useState<UserForm>(emptyForm);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [visiblePasswordIds, setVisiblePasswordIds] = useState<Set<string>>(new Set());
 
   const stats = useMemo(() => {
     const byRole = users.reduce<Record<UserRole, number>>(
@@ -207,26 +203,7 @@ export default function AdminPage() {
       password: "",
       role: user.role,
     });
-    setVisiblePasswordIds((current) => {
-      const next = new Set(current);
-      next.delete(user.id);
-      return next;
-    });
     setMessage(null);
-  }
-
-  function togglePasswordVisibility(id: string) {
-    setVisiblePasswordIds((current) => {
-      const next = new Set(current);
-
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
-
-      return next;
-    });
   }
 
   async function updateUser(event: FormEvent<HTMLFormElement>) {
@@ -253,11 +230,6 @@ export default function AdminPage() {
       setUsers((current) => current.map((user) => (user.id === data.user!.id ? data.user! : user)));
       setEditingId(null);
       setEditForm(emptyForm);
-      setVisiblePasswordIds((current) => {
-        const next = new Set(current);
-        next.delete(data.user!.id);
-        return next;
-      });
       setMessage("Dane użytkownika i rola zostały zaktualizowane.");
     } catch {
       setMessage("Nie udało się połączyć z API edycji użytkowników.");
@@ -420,13 +392,6 @@ export default function AdminPage() {
                             <>
                               <p className="font-bold text-white">{user.firstName} {user.lastName}</p>
                               <p className="text-xs text-slate-500">{user.email}</p>
-                              <div className="mt-2 inline-flex items-center gap-2 rounded-full border border-white/10 bg-[#020813]/70 px-3 py-1 text-xs font-semibold text-slate-400">
-                                <span>Hasło:</span>
-                                <span className="font-mono text-slate-200">{visiblePasswordIds.has(user.id) ? user.password || "Brak zapisanego hasła" : "••••••••"}</span>
-                                <button type="button" onClick={() => togglePasswordVisibility(user.id)} className="text-sky-300 transition hover:text-sky-200" aria-label={visiblePasswordIds.has(user.id) ? "Ukryj hasło" : "Pokaż hasło"}>
-                                  {visiblePasswordIds.has(user.id) ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-                                </button>
-                              </div>
                             </>
                           )}
                         </td>
