@@ -175,6 +175,43 @@ export async function PUT(request: Request) {
   }
 }
 
+export async function PATCH(request: Request) {
+  const body = (await request.json().catch(() => null)) as Record<string, unknown> | null;
+
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    return NextResponse.json({ message: "Nieprawidłowy format JSON." }, { status: 400 });
+  }
+
+  const id = clean(body.id);
+  const password = typeof body.password === "string" ? body.password : "";
+
+  if (!id) {
+    return NextResponse.json({ message: "Brak identyfikatora użytkownika." }, { status: 400 });
+  }
+
+  if (!password) {
+    return NextResponse.json({ message: "Podaj hasło do sprawdzenia." }, { status: 400 });
+  }
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id },
+      select: { passwordHash: true },
+    });
+
+    if (!user) {
+      return NextResponse.json({ message: "Nie znaleziono użytkownika o podanym identyfikatorze." }, { status: 404 });
+    }
+
+    const matches = await bcrypt.compare(password, user.passwordHash);
+
+    return NextResponse.json({ matches });
+  } catch (error) {
+    console.error("ADMIN_USER_PASSWORD_CHECK_ERROR:", error);
+    return getPrismaErrorResponse(error, "Nie udało się sprawdzić hasła użytkownika.");
+  }
+}
+
 export async function DELETE(request: Request) {
   const { searchParams } = new URL(request.url);
   const id = clean(searchParams.get("id"));

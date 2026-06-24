@@ -12,6 +12,7 @@ import {
   Save,
   Trash2,
   Truck,
+  KeyRound,
   UserCog,
   UserPlus,
   Users,
@@ -124,6 +125,9 @@ export default function AdminPage() {
   const [editForm, setEditForm] = useState<UserForm>(emptyForm);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [passwordCheckId, setPasswordCheckId] = useState<string | null>(null);
+  const [passwordCheckValue, setPasswordCheckValue] = useState("");
+  const [passwordCheckingId, setPasswordCheckingId] = useState<string | null>(null);
 
   const stats = useMemo(() => {
     const byRole = users.reduce<Record<UserRole, number>>(
@@ -203,7 +207,41 @@ export default function AdminPage() {
       password: "",
       role: user.role,
     });
+    setPasswordCheckId(null);
+    setPasswordCheckValue("");
     setMessage(null);
+  }
+
+  async function checkUserPassword(user: AdminUser) {
+    if (!passwordCheckValue) {
+      setMessage("Podaj hasło do sprawdzenia.");
+      return;
+    }
+
+    setPasswordCheckingId(user.id);
+    setMessage(null);
+
+    try {
+      const response = await fetch("/api/admin/users", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: user.id, password: passwordCheckValue }),
+      });
+      const data = (await response.json()) as { matches?: boolean; message?: string };
+
+      if (!response.ok || typeof data.matches !== "boolean") {
+        setMessage(data.message ?? "Nie udało się sprawdzić hasła użytkownika.");
+        return;
+      }
+
+      setMessage(data.matches ? `Hasło użytkownika ${user.email} jest poprawne.` : `Hasło użytkownika ${user.email} jest niepoprawne.`);
+      setPasswordCheckValue("");
+      setPasswordCheckId(null);
+    } catch {
+      setMessage("Nie udało się połączyć z API sprawdzania hasła.");
+    } finally {
+      setPasswordCheckingId(null);
+    }
   }
 
   async function updateUser(event: FormEvent<HTMLFormElement>) {
@@ -414,9 +452,18 @@ export default function AdminPage() {
                                 <button type="button" onClick={() => { setEditingId(null); setEditForm(emptyForm); }} className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-bold text-slate-300 transition hover:border-white/20 hover:bg-white/10">Anuluj</button>
                               </>
                             ) : (
-                              <button type="button" onClick={() => startEditing(user)} className="inline-flex items-center gap-2 rounded-xl border border-amber-400/20 bg-amber-400/10 px-3 py-2 text-xs font-bold text-amber-200 transition hover:border-amber-300/40 hover:bg-amber-400/15"><Pencil className="h-4 w-4" />Edytuj</button>
+                              <>
+                                <button type="button" onClick={() => startEditing(user)} className="inline-flex items-center gap-2 rounded-xl border border-amber-400/20 bg-amber-400/10 px-3 py-2 text-xs font-bold text-amber-200 transition hover:border-amber-300/40 hover:bg-amber-400/15"><Pencil className="h-4 w-4" />Edytuj</button>
+                                <button type="button" onClick={() => { setPasswordCheckId(passwordCheckId === user.id ? null : user.id); setPasswordCheckValue(""); setMessage(null); }} className="inline-flex items-center gap-2 rounded-xl border border-sky-400/20 bg-sky-400/10 px-3 py-2 text-xs font-bold text-sky-200 transition hover:border-sky-300/40 hover:bg-sky-400/15"><KeyRound className="h-4 w-4" />Sprawdź hasło</button>
+                              </>
                             )}
                             <button type="button" disabled={deletingId === user.id || updatingId === user.id} onClick={() => deleteUser(user.id)} className="inline-flex items-center gap-2 rounded-xl border border-red-400/20 bg-red-400/10 px-3 py-2 text-xs font-bold text-red-200 transition hover:border-red-300/40 hover:bg-red-400/15 disabled:cursor-not-allowed disabled:opacity-60"><Trash2 className="h-4 w-4" />Usuń</button>
+                            {passwordCheckId === user.id && editingId !== user.id ? (
+                              <form onSubmit={(event) => { event.preventDefault(); void checkUserPassword(user); }} className="mt-2 grid w-full gap-2 sm:grid-cols-[minmax(180px,1fr)_auto]">
+                                <input type="password" value={passwordCheckValue} onChange={(event) => setPasswordCheckValue(event.target.value)} placeholder="Wpisz hasło do weryfikacji" className="rounded-lg border border-white/10 bg-[#020813]/70 px-3 py-2 text-xs font-semibold text-white outline-none placeholder:text-slate-600 focus:border-sky-400/50" />
+                                <button type="submit" disabled={passwordCheckingId === user.id} className="inline-flex items-center justify-center gap-2 rounded-xl border border-sky-400/20 bg-sky-400/10 px-3 py-2 text-xs font-bold text-sky-200 transition hover:border-sky-300/40 hover:bg-sky-400/15 disabled:cursor-not-allowed disabled:opacity-60">{passwordCheckingId === user.id ? "Sprawdzanie..." : "Zweryfikuj"}</button>
+                              </form>
+                            ) : null}
                           </div>
                         </td>
                       </tr>
