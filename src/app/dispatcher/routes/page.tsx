@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { CalendarDays, Edit3, Loader2, PackageCheck, Plus, Route, Truck, Users, X } from "lucide-react";
+import { CalendarDays, Edit3, Loader2, PackageCheck, Plus, Route, Trash2, Truck, Users, X } from "lucide-react";
 import { Sidebar } from "@/components/dashboard/sidebar";
 
 type Driver = { id: string; firstName: string; lastName: string };
@@ -134,6 +134,31 @@ export default function RoutesPage() {
     scrollToForm();
   }
 
+  async function deleteRoute(routeItem: AppRoute) {
+    const confirmed = window.confirm(`Usunąć trasę ${routeItem.routeNumber}? Zamówienia z tej trasy wrócą do nowych zamówień.`);
+
+    if (!confirmed) return;
+
+    setSaving(true);
+    setMessage(null);
+
+    const response = await fetch(`/api/routes?id=${encodeURIComponent(routeItem.id)}`, { method: "DELETE" });
+    const data = (await response.json()) as { ok: boolean; error?: string };
+    setSaving(false);
+
+    if (!response.ok || !data.ok) {
+      setMessage(data.error ?? "Nie udało się usunąć trasy.");
+      return;
+    }
+
+    if (editingId === routeItem.id) {
+      resetForm();
+    }
+
+    setMessage("Trasa została usunięta, a zamówienia wróciły do puli nowych zamówień.");
+    await loadData();
+  }
+
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSaving(true);
@@ -206,7 +231,7 @@ export default function RoutesPage() {
                 {loading ? <p className="text-slate-500">Ładowanie tras...</p> : routes.length ? routes.map((routeItem) => <div key={routeItem.id} className="rounded-2xl border border-white/10 bg-[#020813]/50 p-5">
                   <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                     <div><p className="font-bold text-white">{routeItem.routeNumber} — {routeItem.name}</p><p className="mt-2 flex items-center gap-2 text-sm text-slate-400"><CalendarDays className="h-4 w-4 text-amber-300" />{routeItem.plannedDate ? new Date(routeItem.plannedDate).toLocaleDateString("pl-PL") : "Brak daty"}</p></div>
-                    <div className="flex flex-wrap items-center gap-2"><span className="rounded-full border border-amber-400/30 bg-amber-400/10 px-3 py-1 text-xs font-semibold text-amber-200">{statusLabels[routeItem.status]}</span><button type="button" onClick={() => editRoute(routeItem)} className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-bold text-slate-300 transition hover:border-amber-400/30 hover:text-amber-300"><Edit3 className="h-3.5 w-3.5" />Edytuj</button></div>
+                    <div className="flex flex-wrap items-center gap-2"><span className="rounded-full border border-amber-400/30 bg-amber-400/10 px-3 py-1 text-xs font-semibold text-amber-200">{statusLabels[routeItem.status]}</span><button type="button" onClick={() => editRoute(routeItem)} className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-bold text-slate-300 transition hover:border-amber-400/30 hover:text-amber-300"><Edit3 className="h-3.5 w-3.5" />Edytuj</button><button type="button" onClick={() => void deleteRoute(routeItem)} disabled={saving} className="inline-flex items-center gap-2 rounded-xl border border-red-400/20 bg-red-500/10 px-3 py-2 text-xs font-bold text-red-200 transition hover:border-red-300/40 hover:text-red-100 disabled:cursor-not-allowed disabled:opacity-60"><Trash2 className="h-3.5 w-3.5" />Usuń</button></div>
                   </div>
                   <div className="mt-4 grid gap-3 text-sm text-slate-400 md:grid-cols-3"><p>Kierowca: <span className="text-slate-100">{routeItem.driver ? `${routeItem.driver.firstName} ${routeItem.driver.lastName}` : "Nieprzypisany"}</span></p><p>Dostawy: <span className="text-slate-100">{routeItem.deliveries.length}</span></p><p>Pojazd: <span className="text-slate-100">{routeItem.vehicle ? vehicleLabel(routeItem.vehicle) : "Brak"}</span></p></div>
                 </div>) : <p className="text-slate-500">Brak tras. Dodaj pierwszą trasę.</p>}
