@@ -118,3 +118,49 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ ok: false, error: "Nie udało się zaktualizować trasy." }, { status: 500 });
   }
 }
+
+export async function DELETE(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const id = clean(searchParams.get("id"));
+
+  if (!id) {
+    return NextResponse.json({ ok: false, error: "Brak identyfikatora trasy." }, { status: 400 });
+  }
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      const route = await tx.route.findUnique({
+        where: { id },
+        include: { deliveries: { select: { id: true, orderId: true } } },
+      });
+
+      if (!route) {
+        throw new Error("ROUTE_NOT_FOUND");
+      }
+
+      const orderIds = route.deliveries.map((delivery) => delivery.orderId);
+
+      if (route.deliveries.length > 0) {
+        await tx.delivery.deleteMany({ where: { routeId: id } });
+      }
+
+      if (orderIds.length > 0) {
+        await tx.order.updateMany({
+          where: { id: { in: orderIds } },
+          data: { status: "NEW" },
+        });
+      }
+
+      await tx.route.delete({ where: { id } });
+    });
+
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    if (error instanceof Error && error.message === "ROUTE_NOT_FOUND") {
+      return NextResponse.json({ ok: false, error: "Nie znaleziono trasy." }, { status: 404 });
+    }
+
+    console.error("Route deletion failed", error);
+    return NextResponse.json({ ok: false, error: "Nie udało się usunąć trasy." }, { status: 500 });
+  }
+}

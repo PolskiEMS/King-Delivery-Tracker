@@ -97,14 +97,14 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#020813] p-4 text-slate-100 sm:p-8 lg:p-12">
-      <section className="login-scene relative mx-auto flex min-h-[calc(100vh-2rem)] max-w-7xl overflow-hidden rounded-[2rem] border border-white/10 shadow-2xl shadow-black/50 sm:min-h-[calc(100vh-4rem)] lg:min-h-[calc(100vh-6rem)]">
+    <main className="relative min-h-screen overflow-x-hidden bg-[#020813] p-3 text-slate-100 sm:p-8 lg:p-12">
+      <section className="login-scene relative mx-auto flex min-h-[calc(100vh-1.5rem)] max-w-7xl overflow-hidden rounded-[1.5rem] border border-white/10 shadow-2xl shadow-black/50 sm:min-h-[calc(100vh-4rem)] sm:rounded-[2rem] lg:min-h-[calc(100vh-6rem)]">
         <TruckBackdrop />
 
-        <div className="relative z-10 flex w-full flex-col justify-between p-6 sm:p-10 lg:p-14">
+        <div className="relative z-10 flex w-full flex-col justify-between p-4 sm:p-10 lg:p-14">
           <Brand />
 
-          <div className="mt-6 grid flex-1 items-center gap-10 lg:grid-cols-[1fr_34rem]">
+          <div className="mt-5 grid flex-1 items-center gap-6 sm:mt-6 lg:grid-cols-[1fr_34rem] lg:gap-10">
             <div className="hidden max-w-xl self-center -translate-y-10 lg:block">
               <p className="text-sm font-semibold uppercase tracking-[0.35em] text-amber-300/80">
                 System logistyczny
@@ -120,9 +120,9 @@ export default function LoginPage() {
               </p>
             </div>
 
-            <Card className="mx-auto w-full max-w-md p-7 sm:p-9 lg:mr-10">
+            <Card className="mx-auto w-full max-w-md p-5 sm:p-9 lg:mr-10">
               <div>
-                <h2 className="text-3xl font-bold tracking-tight text-white">
+                <h2 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
                   Zaloguj się
                 </h2>
                 <p className="mt-3 text-sm text-slate-400">
@@ -130,7 +130,7 @@ export default function LoginPage() {
                 </p>
               </div>
 
-              <form onSubmit={handleLogin} className="mt-8 space-y-5">
+              <form onSubmit={handleLogin} className="mt-6 space-y-4 sm:mt-8 sm:space-y-5">
                 <div className="space-y-2">
                   <label htmlFor="email" className="text-sm font-semibold text-slate-200">
                     Email
@@ -170,7 +170,7 @@ export default function LoginPage() {
                   </p>
                 )}
 
-                <div className="flex justify-between gap-4 text-sm">
+                <div className="flex flex-col gap-3 text-sm min-[420px]:flex-row min-[420px]:justify-between">
                   <Link
                     href="/register"
                     className="font-medium text-amber-300 transition hover:text-amber-200"
@@ -192,7 +192,7 @@ export default function LoginPage() {
                 </Button>
               </form>
 
-              <div className="my-6 flex items-center gap-4 text-xs text-slate-500 sm:my-8">
+              <div className="my-5 flex items-center gap-3 text-center text-xs text-slate-500 sm:my-8 sm:gap-4">
                 <span className="h-px flex-1 bg-white/10" />
                 <span>lub kontynuuj jako</span>
                 <span className="h-px flex-1 bg-white/10" />
@@ -222,7 +222,7 @@ export default function LoginPage() {
             </Card>
           </div>
 
-          <p className="relative z-10 mt-10 text-center text-xs text-slate-500">
+          <p className="relative z-10 mt-6 text-center text-xs text-slate-500 sm:mt-10">
             © 2026 King Delivery Tracker. Wszelkie prawa zastrzeżone.
           </p>
         </div>
