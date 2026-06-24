@@ -9,11 +9,10 @@ async function main() {
 
   await prisma.user.upsert({
     where: { email: "admin@king.pl" },
-    update: { password, passwordHash },
+    update: { passwordHash },
     create: {
       email: "admin@king.pl",
       passwordHash,
-      password,
       firstName: "Admin",
       lastName: "Systemu",
       role: "ADMIN",
@@ -22,11 +21,10 @@ async function main() {
 
   await prisma.user.upsert({
     where: { email: "dyspozytor@king.pl" },
-    update: { password, passwordHash },
+    update: { passwordHash },
     create: {
       email: "dyspozytor@king.pl",
       passwordHash,
-      password,
       firstName: "Jan",
       lastName: "Dyspozytor",
       role: "DISPATCHER",
@@ -35,11 +33,10 @@ async function main() {
 
   await prisma.user.upsert({
     where: { email: "kierowca@king.pl" },
-    update: { password, passwordHash },
+    update: { passwordHash },
     create: {
       email: "kierowca@king.pl",
       passwordHash,
-      password,
       firstName: "Piotr",
       lastName: "Kierowca",
       role: "DRIVER",

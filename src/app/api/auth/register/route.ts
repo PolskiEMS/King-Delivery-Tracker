@@ -54,7 +54,6 @@ export async function POST(request: Request) {
         lastName,
         email,
         passwordHash,
-        password,
         role,
       },
     });
