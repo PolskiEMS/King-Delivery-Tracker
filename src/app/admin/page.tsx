@@ -454,12 +454,7 @@ export default function AdminPage() {
                               </>
                             )}
                             <button type="button" disabled={deletingId === user.id || updatingId === user.id} onClick={() => deleteUser(user.id)} className="inline-flex items-center gap-2 rounded-xl border border-red-400/20 bg-red-400/10 px-3 py-2 text-xs font-bold text-red-200 transition hover:border-red-300/40 hover:bg-red-400/15 disabled:cursor-not-allowed disabled:opacity-60"><Trash2 className="h-4 w-4" />Usuń</button>
-                            {passwordCheckId === user.id && editingId !== user.id ? (
-                              <form onSubmit={(event) => { event.preventDefault(); void checkUserPassword(user); }} className="mt-2 grid w-full gap-2 sm:grid-cols-[minmax(180px,1fr)_auto]">
-                                <input type="password" value={passwordCheckValue} onChange={(event) => setPasswordCheckValue(event.target.value)} placeholder="Wpisz hasło do weryfikacji" className="rounded-lg border border-white/10 bg-[#020813]/70 px-3 py-2 text-xs font-semibold text-white outline-none placeholder:text-slate-600 focus:border-sky-400/50" />
-                                <button type="submit" disabled={passwordCheckingId === user.id} className="inline-flex items-center justify-center gap-2 rounded-xl border border-sky-400/20 bg-sky-400/10 px-3 py-2 text-xs font-bold text-sky-200 transition hover:border-sky-300/40 hover:bg-sky-400/15 disabled:cursor-not-allowed disabled:opacity-60">{passwordCheckingId === user.id ? "Sprawdzanie..." : "Zweryfikuj"}</button>
-                              </form>
-                            ) : null}
+                            
                           </div>
                         </td>
                       </tr>
