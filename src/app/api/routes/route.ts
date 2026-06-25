@@ -118,3 +118,27 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ ok: false, error: "Nie udało się zaktualizować trasy." }, { status: 500 });
   }
 }
+
+
+export async function DELETE(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const id = clean(searchParams.get("id"));
+
+  if (!id) {
+    return NextResponse.json({ ok: false, error: "Brak identyfikatora trasy." }, { status: 400 });
+  }
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      const deliveries = await tx.delivery.findMany({ where: { routeId: id }, select: { orderId: true } });
+      await tx.delivery.deleteMany({ where: { routeId: id } });
+      await tx.order.updateMany({ where: { id: { in: deliveries.map((delivery) => delivery.orderId) } }, data: { status: "NEW" } });
+      await tx.route.delete({ where: { id } });
+    });
+
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    console.error("Route deletion failed", error);
+    return NextResponse.json({ ok: false, error: "Nie udało się usunąć trasy." }, { status: 500 });
+  }
+}

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   Bell,
   CircleDot,
@@ -120,6 +121,8 @@ function MapPreview() {
 }
 
 export default function DispatcherPage() {
+  const pathname = usePathname();
+  const isAdminArea = pathname.startsWith("/admin");
   const [dispatchers, setDispatchers] = useState<Dispatcher[]>([]);
   const [currentUser, setCurrentUser] = useState<StoredUser | null>(null);
   const [selectedDispatcherId, setSelectedDispatcherId] = useState("");
@@ -132,8 +135,8 @@ export default function DispatcherPage() {
   );
 
   const visibleDispatchers = useMemo(
-    () => (loggedDispatcher ? [loggedDispatcher] : dispatchers),
-    [dispatchers, loggedDispatcher],
+    () => (isAdminArea || !loggedDispatcher ? dispatchers : [loggedDispatcher]),
+    [dispatchers, isAdminArea, loggedDispatcher],
   );
 
   const selectedDispatcher = useMemo(
@@ -141,9 +144,11 @@ export default function DispatcherPage() {
     [visibleDispatchers, selectedDispatcherId],
   );
 
-  const dispatcherPanelTitle = selectedDispatcher
-    ? `Panel ${selectedDispatcher.firstName} ${selectedDispatcher.lastName}`
-    : "Panel dyspozytora";
+  const dispatcherPanelTitle = isAdminArea
+    ? "Dyspozytornia administratora"
+    : selectedDispatcher
+      ? `Panel ${selectedDispatcher.firstName} ${selectedDispatcher.lastName}`
+      : "Panel dyspozytora";
 
   const loadDispatchers = useCallback(async () => {
     const response = await fetch("/api/dispatchers", { cache: "no-store" });
@@ -174,10 +179,10 @@ export default function DispatcherPage() {
   }, [loadDispatchers]);
 
   useEffect(() => {
-    if (loggedDispatcher) {
+    if (!isAdminArea && loggedDispatcher) {
       setSelectedDispatcherId(loggedDispatcher.id);
     }
-  }, [loggedDispatcher]);
+  }, [isAdminArea, loggedDispatcher]);
 
   async function updateDispatcherStatus(dispatcherStatus: DispatcherStatus) {
     if (!selectedDispatcher) return;
@@ -226,7 +231,7 @@ export default function DispatcherPage() {
               </button>
 
               <Link
-                href="/dispatcher/routes#nowa-trasa"
+                href={isAdminArea ? "/admin/trasy#nowa-trasa" : "/dispatcher/routes#nowa-trasa"}
                 className="inline-flex min-w-0 items-center justify-center gap-2 rounded-xl bg-amber-400 px-3 py-2.5 text-sm font-bold text-slate-950 shadow-lg shadow-amber-400/10 transition hover:bg-amber-300 sm:px-4"
               >
                 <Plus className="h-4 w-4" />

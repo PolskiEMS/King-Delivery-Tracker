@@ -30,6 +30,16 @@ type AdminUser = {
   createdAt: string;
 };
 
+type OperationalDriver = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  phone: string | null;
+  active: boolean;
+  createdAt: string;
+  routes: unknown[];
+};
+
 type UserForm = {
   firstName: string;
   lastName: string;
@@ -108,14 +118,15 @@ const controlCards = [
 ];
 
 const managementLinks = [
-  { label: "Dyspozytornia", href: "/dispatcher", icon: BarChart3 },
-  { label: "Zamówienia", href: "/dispatcher/orders", icon: Database },
-  { label: "Trasy", href: "/dispatcher/routes", icon: Truck },
-  { label: "Kierowcy", href: "/dispatcher/drivers", icon: Users },
+  { label: "Dyspozytornia", href: "/admin/dyspozytornia", icon: BarChart3 },
+  { label: "Zamówienia", href: "/admin/zamowienia", icon: Database },
+  { label: "Trasy", href: "/admin/trasy", icon: Truck },
+  { label: "Kierowcy", href: "/admin/kierowcy", icon: Users },
 ];
 
 export default function AdminPage() {
   const [users, setUsers] = useState<AdminUser[]>([]);
+  const [operationalDrivers, setOperationalDrivers] = useState<OperationalDriver[]>([]);
   const [form, setForm] = useState<UserForm>(emptyForm);
   const [message, setMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -124,6 +135,7 @@ export default function AdminPage() {
   const [editForm, setEditForm] = useState<UserForm>(emptyForm);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deletingDriverId, setDeletingDriverId] = useState<string | null>(null);
 
   const stats = useMemo(() => {
     const byRole = users.reduce<Record<UserRole, number>>(
@@ -135,9 +147,9 @@ export default function AdminPage() {
       { label: "Wszyscy użytkownicy", value: users.length, hint: "pełna kontrola kont" },
       { label: "Administratorzy", value: byRole.ADMIN, hint: "dostęp do centrum" },
       { label: "Dyspozytorzy", value: byRole.DISPATCHER, hint: "operacje i trasy" },
-      { label: "Kierowcy", value: byRole.DRIVER, hint: "realizacja dostaw" },
+      { label: "Kierowcy", value: operationalDrivers.length, hint: "rekordy operacyjne w bazie" },
     ];
-  }, [users]);
+  }, [users, operationalDrivers.length]);
 
 
   const roleChart = useMemo(() => {
@@ -155,10 +167,15 @@ export default function AdminPage() {
 
   const loadUsers = useCallback(async () => {
     setIsLoading(true);
-    const response = await fetch("/api/admin/users", { cache: "no-store" });
-    const data = (await response.json()) as { users?: AdminUser[]; message?: string };
-    setUsers(data.users ?? []);
-    setMessage(response.ok ? null : data.message ?? "Nie udało się pobrać użytkowników.");
+    const [usersResponse, driversResponse] = await Promise.all([
+      fetch("/api/admin/users", { cache: "no-store" }),
+      fetch("/api/drivers", { cache: "no-store" }),
+    ]);
+    const usersData = (await usersResponse.json()) as { users?: AdminUser[]; message?: string };
+    const driversData = (await driversResponse.json()) as { drivers?: OperationalDriver[]; error?: string };
+    setUsers(usersData.users ?? []);
+    setOperationalDrivers(driversData.drivers ?? []);
+    setMessage(usersResponse.ok && driversResponse.ok ? null : usersData.message ?? driversData.error ?? "Nie udało się pobrać danych panelu admina.");
     setIsLoading(false);
   }, []);
 
@@ -236,6 +253,27 @@ export default function AdminPage() {
     } finally {
       setUpdatingId(null);
     }
+  }
+
+  async function deleteOperationalDriver(id: string) {
+    const driver = operationalDrivers.find((item) => item.id === id);
+    const confirmed = window.confirm(`Czy na pewno usunąć kierowcę ${driver?.firstName ?? ""} ${driver?.lastName ?? ""}?`);
+
+    if (!confirmed) return;
+
+    setDeletingDriverId(id);
+    setMessage(null);
+    const response = await fetch(`/api/drivers?id=${encodeURIComponent(id)}`, { method: "DELETE" });
+    const data = (await response.json()) as { ok?: boolean; error?: string };
+    setDeletingDriverId(null);
+
+    if (!response.ok || !data.ok) {
+      setMessage(data.error ?? "Nie udało się usunąć kierowcy.");
+      return;
+    }
+
+    setOperationalDrivers((current) => current.filter((item) => item.id !== id));
+    setMessage("Kierowca operacyjny został usunięty.");
   }
 
   async function deleteUser(id: string) {
@@ -431,6 +469,33 @@ export default function AdminPage() {
               </div>
             </article>
           </div>
+
+
+          <article className="rounded-2xl border border-white/10 bg-white/[0.04] p-5 shadow-2xl shadow-black/20 backdrop-blur sm:p-6">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-300">Baza operacyjna</p>
+                <h2 className="mt-2 text-xl font-black text-white">Kierowcy dodani przez dyspozytornię</h2>
+                <p className="mt-2 text-sm text-slate-400">Lista pochodzi bezpośrednio z tabeli Driver, więc administrator widzi kierowców utworzonych w panelu dyspozytora.</p>
+              </div>
+              <p className="text-sm font-semibold text-slate-500">{operationalDrivers.length} rekordów</p>
+            </div>
+
+            <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+              {operationalDrivers.length ? operationalDrivers.map((driver) => (
+                <div key={driver.id} className="rounded-2xl border border-white/10 bg-[#020813]/50 p-4">
+                  <p className="font-bold text-white">{driver.firstName} {driver.lastName}</p>
+                  <p className="mt-1 text-sm text-slate-400">{driver.phone ?? "Brak telefonu"}</p>
+                  <p className="mt-3 text-xs font-semibold uppercase tracking-[0.2em] text-emerald-300">{driver.active ? "Aktywny" : "Nieaktywny"}</p>
+                  <p className="mt-2 text-xs text-slate-500">Trasy: {driver.routes.length}</p>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <Link href="/admin/kierowcy" className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-bold text-slate-300 transition hover:border-amber-400/30 hover:text-amber-300">Edytuj</Link>
+                    <button type="button" disabled={deletingDriverId === driver.id} onClick={() => void deleteOperationalDriver(driver.id)} className="rounded-xl border border-red-400/20 bg-red-400/10 px-3 py-2 text-xs font-bold text-red-200 transition hover:border-red-300/40 hover:bg-red-400/15 disabled:opacity-60">Usuń</button>
+                  </div>
+                </div>
+              )) : <p className="rounded-2xl border border-white/10 bg-[#020813]/60 p-5 text-sm text-slate-400 md:col-span-2 xl:col-span-4">Brak kierowców w tabeli Driver.</p>}
+            </div>
+          </article>
 
           <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
             {controlCards.map((card) => {
