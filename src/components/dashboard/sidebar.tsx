@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { LogoutButton } from "@/components/auth/logout-button";
 import {
   Bell,
@@ -14,7 +15,7 @@ import {
   Users,
 } from "lucide-react";
 
-const menu = [
+const dispatcherMenu = [
   { label: "Pulpit", href: "/dispatcher", icon: LayoutDashboard },
   { label: "Zamówienia", href: "/dispatcher/orders", icon: PackageCheck },
   { label: "Trasy", href: "/dispatcher/routes", icon: Route },
@@ -25,7 +26,13 @@ const menu = [
   { label: "Ustawienia", href: "/dispatcher/settings", icon: Settings },
 ];
 
-const mobileMenu = menu.slice(0, 5);
+const adminMenu = [
+  { label: "Pulpit admina", href: "/admin", icon: LayoutDashboard },
+  { label: "Dyspozytornia", href: "/admin/dyspozytornia", icon: Route },
+  { label: "Zamówienia", href: "/admin/zamowienia", icon: PackageCheck },
+  { label: "Trasy", href: "/admin/trasy", icon: Route },
+  { label: "Kierowcy", href: "/admin/kierowcy", icon: Users },
+];
 
 type StoredUser = {
   firstName?: string;
@@ -43,6 +50,10 @@ function getDispatcherPanelLabel(user: StoredUser | null) {
 }
 
 export function Sidebar() {
+  const pathname = usePathname();
+  const isAdminArea = pathname.startsWith("/admin");
+  const menu = useMemo(() => (isAdminArea ? adminMenu : dispatcherMenu), [isAdminArea]);
+  const mobileMenu = menu.slice(0, 5);
   const [currentUser, setCurrentUser] = useState<StoredUser | null>(null);
 
   useEffect(() => {
@@ -57,7 +68,7 @@ export function Sidebar() {
     }
   }, []);
 
-  const panelLabel = getDispatcherPanelLabel(currentUser);
+  const panelLabel = isAdminArea ? "Administrator" : getDispatcherPanelLabel(currentUser);
 
   return (
     <>
@@ -115,7 +126,7 @@ export function Sidebar() {
       </aside>
 
       <nav
-        aria-label="Nawigacja mobilna dyspozytora"
+        aria-label={isAdminArea ? "Nawigacja mobilna administratora" : "Nawigacja mobilna dyspozytora"}
         className="fixed inset-x-3 bottom-3 z-50 rounded-3xl border border-white/10 bg-[#020813]/95 p-2 text-slate-300 shadow-2xl shadow-black/50 backdrop-blur lg:hidden"
       >
         <div className="grid grid-cols-5 gap-1">

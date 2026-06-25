@@ -73,3 +73,25 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ ok: false, error: "Nie udało się zaktualizować kierowcy." }, { status: 500 });
   }
 }
+
+
+export async function DELETE(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const id = clean(searchParams.get("id"));
+
+  if (!id) {
+    return NextResponse.json({ ok: false, error: "Brak identyfikatora kierowcy." }, { status: 400 });
+  }
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      await tx.route.updateMany({ where: { driverId: id }, data: { driverId: null } });
+      await tx.driver.delete({ where: { id } });
+    });
+
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    console.error("Driver deletion failed", error);
+    return NextResponse.json({ ok: false, error: "Nie udało się usunąć kierowcy." }, { status: 500 });
+  }
+}

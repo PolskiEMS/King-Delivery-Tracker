@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { CheckCircle2, Edit3, Loader2, Phone, Plus, RefreshCw, Route, Users } from "lucide-react";
+import { CheckCircle2, Edit3, Loader2, Phone, Plus, RefreshCw, Route, Trash2, Users } from "lucide-react";
 import { Sidebar } from "@/components/dashboard/sidebar";
 
 type Driver = { id: string; firstName: string; lastName: string; phone: string | null; active: boolean; routes: unknown[] };
@@ -14,6 +14,7 @@ export default function DriversPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const formRef = useRef<HTMLElement | null>(null);
 
@@ -62,6 +63,23 @@ export default function DriversPage() {
     await loadDrivers();
   }
 
+  async function deleteDriver(id: string) {
+    const confirmed = window.confirm("Czy na pewno usunąć kierowcę? Zostanie odpięty od tras.");
+    if (!confirmed) return;
+    setDeletingId(id);
+    setMessage(null);
+    const response = await fetch(`/api/drivers?id=${encodeURIComponent(id)}`, { method: "DELETE" });
+    const data = (await response.json()) as { ok: boolean; error?: string };
+    setDeletingId(null);
+    if (!response.ok || !data.ok) {
+      setMessage(data.error ?? "Nie udało się usunąć kierowcy.");
+      return;
+    }
+    if (editingId === id) { setEditingId(null); setShowForm(false); setForm(initialForm); }
+    setMessage("Kierowca został usunięty.");
+    await loadDrivers();
+  }
+
   function editDriver(driver: Driver) {
     setEditingId(driver.id);
     setForm({ firstName: driver.firstName, lastName: driver.lastName, phone: driver.phone ?? "", active: driver.active });
@@ -102,14 +120,14 @@ export default function DriversPage() {
                 <input required placeholder="Nazwisko" value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} className="rounded-xl border border-white/10 bg-[#020813]/70 px-4 py-3 text-sm text-white outline-none focus:border-amber-400/50" />
                 <input placeholder="Telefon" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="rounded-xl border border-white/10 bg-[#020813]/70 px-4 py-3 text-sm text-white outline-none focus:border-amber-400/50" />
                 <select value={form.active ? "active" : "inactive"} onChange={(e) => setForm({ ...form, active: e.target.value === "active" })} className="rounded-xl border border-white/10 bg-[#020813]/70 px-4 py-3 text-sm text-white outline-none focus:border-amber-400/50"><option value="active">Aktywny</option><option value="inactive">Nieaktywny</option></select>
-                <button disabled={saving} className="inline-flex items-center justify-center gap-2 rounded-xl bg-amber-400 px-5 py-3 text-sm font-bold text-[#020813] sm:col-span-2 lg:col-span-4">{saving && <Loader2 className="h-4 w-4 animate-spin" />}{editingId ? "Zapisz zmiany" : "Zapisz kierowcę"}</button>
+                <div className="grid gap-3 sm:col-span-2 lg:col-span-4 lg:grid-cols-2">{editingId && <button type="button" disabled={deletingId === editingId} onClick={() => void deleteDriver(editingId)} className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-400/20 bg-red-400/10 px-5 py-3 text-sm font-bold text-red-200 transition hover:border-red-300/40 hover:bg-red-400/15 disabled:opacity-60"><Trash2 className="h-4 w-4" />Usuń kierowcę</button>}<button disabled={saving} className="inline-flex items-center justify-center gap-2 rounded-xl bg-amber-400 px-5 py-3 text-sm font-bold text-[#020813]">{saving && <Loader2 className="h-4 w-4 animate-spin" />}{editingId ? "Zapisz zmiany" : "Zapisz kierowcę"}</button></div>
               </form>
             </article>}
 
             <article className="rounded-2xl border border-white/10 bg-white/[0.04] p-6 shadow-2xl shadow-black/20">
               <h2 className="text-lg font-bold text-white">Lista kierowców</h2>
               <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                {loading ? <p className="text-slate-500">Ładowanie kierowców...</p> : drivers.length ? drivers.map((driver) => <div key={driver.id} className="rounded-2xl border border-white/10 bg-[#020813]/50 p-5"><p className="font-bold text-white">{driver.firstName} {driver.lastName}</p><p className="mt-2 flex items-center gap-2 text-sm text-slate-400"><Phone className="h-4 w-4 text-amber-300" />{driver.phone ?? "Brak telefonu"}</p><p className="mt-3 text-xs font-semibold uppercase tracking-[0.2em] text-emerald-300">{driver.active ? "Aktywny" : "Nieaktywny"}</p><button type="button" onClick={() => editDriver(driver)} className="mt-4 inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-bold text-slate-300 transition hover:border-amber-400/30 hover:text-amber-300"><Edit3 className="h-3.5 w-3.5" />Edytuj</button></div>) : <p className="text-slate-500">Brak kierowców. Dodaj pierwszego kierowcę.</p>}
+                {loading ? <p className="text-slate-500">Ładowanie kierowców...</p> : drivers.length ? drivers.map((driver) => <div key={driver.id} className="rounded-2xl border border-white/10 bg-[#020813]/50 p-5"><p className="font-bold text-white">{driver.firstName} {driver.lastName}</p><p className="mt-2 flex items-center gap-2 text-sm text-slate-400"><Phone className="h-4 w-4 text-amber-300" />{driver.phone ?? "Brak telefonu"}</p><p className="mt-3 text-xs font-semibold uppercase tracking-[0.2em] text-emerald-300">{driver.active ? "Aktywny" : "Nieaktywny"}</p><button type="button" onClick={() => editDriver(driver)} className="mt-4 inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-bold text-slate-300 transition hover:border-amber-400/30 hover:text-amber-300"><Edit3 className="h-3.5 w-3.5" />Edytuj</button><button type="button" disabled={deletingId === driver.id} onClick={() => void deleteDriver(driver.id)} className="mt-4 ml-2 inline-flex items-center gap-2 rounded-xl border border-red-400/20 bg-red-400/10 px-3 py-2 text-xs font-bold text-red-200 transition hover:border-red-300/40 hover:bg-red-400/15 disabled:opacity-60"><Trash2 className="h-3.5 w-3.5" />Usuń</button></div>) : <p className="text-slate-500">Brak kierowców. Dodaj pierwszego kierowcę.</p>}
               </div>
             </article>
           </div>

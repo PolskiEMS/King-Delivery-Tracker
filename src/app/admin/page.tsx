@@ -135,6 +135,7 @@ export default function AdminPage() {
   const [editForm, setEditForm] = useState<UserForm>(emptyForm);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deletingDriverId, setDeletingDriverId] = useState<string | null>(null);
 
   const stats = useMemo(() => {
     const byRole = users.reduce<Record<UserRole, number>>(
@@ -252,6 +253,27 @@ export default function AdminPage() {
     } finally {
       setUpdatingId(null);
     }
+  }
+
+  async function deleteOperationalDriver(id: string) {
+    const driver = operationalDrivers.find((item) => item.id === id);
+    const confirmed = window.confirm(`Czy na pewno usunąć kierowcę ${driver?.firstName ?? ""} ${driver?.lastName ?? ""}?`);
+
+    if (!confirmed) return;
+
+    setDeletingDriverId(id);
+    setMessage(null);
+    const response = await fetch(`/api/drivers?id=${encodeURIComponent(id)}`, { method: "DELETE" });
+    const data = (await response.json()) as { ok?: boolean; error?: string };
+    setDeletingDriverId(null);
+
+    if (!response.ok || !data.ok) {
+      setMessage(data.error ?? "Nie udało się usunąć kierowcy.");
+      return;
+    }
+
+    setOperationalDrivers((current) => current.filter((item) => item.id !== id));
+    setMessage("Kierowca operacyjny został usunięty.");
   }
 
   async function deleteUser(id: string) {
@@ -466,6 +488,10 @@ export default function AdminPage() {
                   <p className="mt-1 text-sm text-slate-400">{driver.phone ?? "Brak telefonu"}</p>
                   <p className="mt-3 text-xs font-semibold uppercase tracking-[0.2em] text-emerald-300">{driver.active ? "Aktywny" : "Nieaktywny"}</p>
                   <p className="mt-2 text-xs text-slate-500">Trasy: {driver.routes.length}</p>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <Link href="/admin/kierowcy" className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-bold text-slate-300 transition hover:border-amber-400/30 hover:text-amber-300">Edytuj</Link>
+                    <button type="button" disabled={deletingDriverId === driver.id} onClick={() => void deleteOperationalDriver(driver.id)} className="rounded-xl border border-red-400/20 bg-red-400/10 px-3 py-2 text-xs font-bold text-red-200 transition hover:border-red-300/40 hover:bg-red-400/15 disabled:opacity-60">Usuń</button>
+                  </div>
                 </div>
               )) : <p className="rounded-2xl border border-white/10 bg-[#020813]/60 p-5 text-sm text-slate-400 md:col-span-2 xl:col-span-4">Brak kierowców w tabeli Driver.</p>}
             </div>
