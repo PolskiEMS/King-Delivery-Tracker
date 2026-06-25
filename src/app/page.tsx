@@ -12,21 +12,21 @@ import { Input } from "@/components/ui/input";
 const roles = [
   {
     name: "Dyspozytor",
-    href: "/dispatcher",
+    demoEmail: "dyspozytor@king.pl",
     icon: Headphones,
     color: "text-sky-400",
     glow: "bg-sky-400/10",
   },
   {
     name: "Kierowca",
-    href: "/driver",
+    demoEmail: "kierowca@king.pl",
     icon: Truck,
     color: "text-emerald-400",
     glow: "bg-emerald-400/10",
   },
   {
     name: "Administrator",
-    href: "/admin",
+    demoEmail: "admin@king.pl",
     icon: ShieldCheck,
     color: "text-violet-400",
     glow: "bg-violet-400/10",
@@ -59,6 +59,28 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
 
+  async function loginWithCredentials(email: string, password: string) {
+    const response = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email, password }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || !data.ok) {
+      throw new Error(data.message || "Nie udało się zalogować.");
+    }
+
+    if (typeof window !== "undefined" && data.user) {
+      window.localStorage.setItem("kingDeliveryCurrentUser", JSON.stringify(data.user));
+    }
+
+    router.push(data.redirectTo);
+  }
+
   async function handleLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
@@ -69,28 +91,22 @@ export default function LoginPage() {
     const password = String(formData.get("password") || "");
 
     try {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password }),
-      });
+      await loginWithCredentials(email, password);
+    } catch (loginError) {
+      setError(loginError instanceof Error ? loginError.message : "Nie udało się połączyć z serwerem.");
+    } finally {
+      setLoading(false);
+    }
+  }
 
-      const data = await response.json();
+  async function handleDemoLogin(email: string) {
+    setError("");
+    setLoading(true);
 
-      if (!response.ok || !data.ok) {
-        setError(data.message || "Nie udało się zalogować.");
-        return;
-      }
-
-      if (typeof window !== "undefined" && data.user) {
-        window.localStorage.setItem("kingDeliveryCurrentUser", JSON.stringify(data.user));
-      }
-
-      router.push(data.redirectTo);
-    } catch {
-      setError("Nie udało się połączyć z serwerem.");
+    try {
+      await loginWithCredentials(email, "demo123");
+    } catch (loginError) {
+      setError(loginError instanceof Error ? loginError.message : "Nie udało się połączyć z kontem demo.");
     } finally {
       setLoading(false);
     }
@@ -203,10 +219,12 @@ export default function LoginPage() {
                   const Icon = role.icon;
 
                   return (
-                    <Link
+                    <button
                       key={role.name}
-                      href={role.href}
-                      className="group flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.04] p-4 text-left transition hover:-translate-y-0.5 hover:border-amber-400/35 hover:bg-white/[0.07] min-[380px]:block min-[380px]:text-center"
+                      type="button"
+                      disabled={loading}
+                      onClick={() => void handleDemoLogin(role.demoEmail)}
+                      className="group flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.04] p-4 text-left transition hover:-translate-y-0.5 hover:border-amber-400/35 hover:bg-white/[0.07] disabled:cursor-not-allowed disabled:opacity-60 min-[380px]:block min-[380px]:text-center"
                     >
                       <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg min-[380px]:mx-auto ${role.glow}`}>
                         <Icon className={`h-5 w-5 ${role.color}`} />
@@ -215,7 +233,7 @@ export default function LoginPage() {
                       <span className="block text-xs font-semibold text-slate-200 group-hover:text-white min-[380px]:mt-3">
                         {role.name}
                       </span>
-                    </Link>
+                    </button>
                   );
                 })}
               </div>

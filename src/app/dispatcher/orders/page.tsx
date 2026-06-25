@@ -6,12 +6,14 @@ import {
   CheckCircle2,
   ClipboardList,
   Clock3,
+  Edit3,
   Loader2,
   PackageCheck,
   Plus,
   RefreshCw,
   Route,
   Truck,
+  Trash2,
 } from "lucide-react";
 import { Sidebar } from "@/components/dashboard/sidebar";
 
@@ -153,6 +155,8 @@ export default function DispatcherOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [form, setForm] = useState<OrderFormState>(initialFormState);
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -166,6 +170,8 @@ export default function DispatcherOrdersPage() {
   }, []);
 
   const openForm = useCallback(() => {
+    setEditingId(null);
+    setForm(initialFormState);
     setShowForm(true);
     scrollToForm();
   }, [scrollToForm]);
@@ -217,6 +223,44 @@ export default function DispatcherOrdersPage() {
     setForm((current) => ({ ...current, [field]: value }));
   }
 
+  function editOrder(order: Order) {
+    setEditingId(order.id);
+    setForm({
+      orderNumber: order.orderNumber,
+      customerName: order.customerName,
+      address: order.address,
+      city: order.city,
+      postalCode: order.postalCode ?? "",
+      country: order.country,
+      goodsName: order.goodsName,
+      quantity: String(order.quantity),
+      unit: order.unit,
+      pallets: order.pallets === null ? "" : String(order.pallets),
+      weightKg: order.weightKg === null ? "" : String(order.weightKg),
+      notes: order.notes ?? "",
+    });
+    setShowForm(true);
+    scrollToForm();
+  }
+
+  async function deleteOrder(id: string) {
+    const confirmed = window.confirm("Czy na pewno usunąć zamówienie? Powiązana dostawa również zostanie usunięta.");
+    if (!confirmed) return;
+    setDeletingId(id);
+    setError(null);
+    setSuccess(null);
+    const response = await fetch(`/api/orders?id=${encodeURIComponent(id)}`, { method: "DELETE" });
+    const data = (await response.json()) as { ok: boolean; error?: string };
+    setDeletingId(null);
+    if (!response.ok || !data.ok) {
+      setError(data.error ?? "Nie udało się usunąć zamówienia.");
+      return;
+    }
+    if (editingId === id) { setEditingId(null); setShowForm(false); setForm(initialFormState); }
+    setSuccess("Zamówienie zostało usunięte.");
+    await loadOrders();
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setIsSaving(true);
@@ -225,9 +269,9 @@ export default function DispatcherOrdersPage() {
 
     try {
       const response = await fetch("/api/orders", {
-        method: "POST",
+        method: editingId ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify(editingId ? { ...form, id: editingId } : form),
       });
       const data = (await response.json()) as { ok: boolean; error?: string };
 
@@ -236,8 +280,9 @@ export default function DispatcherOrdersPage() {
       }
 
       setForm(initialFormState);
+      setEditingId(null);
       setShowForm(false);
-      setSuccess("Zamówienie zostało zapisane.");
+      setSuccess(editingId ? "Zamówienie zostało zaktualizowane." : "Zamówienie zostało zapisane.");
       await loadOrders();
     } catch (saveError) {
       setError(
@@ -338,7 +383,7 @@ export default function DispatcherOrdersPage() {
                 <div className="mb-5 flex items-center justify-between gap-4">
                   <div>
                     <h2 className="text-lg font-bold text-white">
-                      Nowe zamówienie
+                      {editingId ? "Edytuj zamówienie" : "Nowe zamówienie"}
                     </h2>
                     <p className="mt-1 text-sm text-slate-500">
                       Wprowadź dane wejściowe, z których później powstaną trasy.
@@ -389,11 +434,11 @@ export default function DispatcherOrdersPage() {
                       ) : (
                         <PackageCheck className="h-4 w-4" />
                       )}
-                      Zapisz zamówienie
+                      {editingId ? "Zapisz zmiany" : "Zapisz zamówienie"}
                     </button>
                     <button
                       type="button"
-                      onClick={() => setShowForm(false)}
+                      onClick={() => { setShowForm(false); setEditingId(null); setForm(initialFormState); }}
                       className="rounded-xl border border-white/10 bg-white/[0.04] px-5 py-3 text-sm font-semibold text-slate-300 transition hover:border-amber-400/30 hover:bg-white/[0.07] hover:text-amber-300"
                     >
                       Anuluj
@@ -429,13 +474,14 @@ export default function DispatcherOrdersPage() {
                       <th className="pb-4">Ilość</th>
                       <th className="pb-4">Palety</th>
                       <th className="pb-4">Status</th>
+                      <th className="pb-4 text-right">Akcje</th>
                     </tr>
                   </thead>
 
                   <tbody className="divide-y divide-white/10">
                     {isLoading ? (
                       <tr>
-                        <td colSpan={8} className="py-10 text-center text-sm text-slate-500">
+                        <td colSpan={9} className="py-10 text-center text-sm text-slate-500">
                           <span className="inline-flex items-center gap-2">
                             <Loader2 className="h-4 w-4 animate-spin text-amber-300" />
                             Ładowanie zamówień...
@@ -462,11 +508,17 @@ export default function DispatcherOrdersPage() {
                           <td className="py-4">
                             <StatusBadge status={order.status} />
                           </td>
+                          <td className="py-4 text-right">
+                            <div className="flex flex-wrap justify-end gap-2">
+                              <button type="button" onClick={() => editOrder(order)} className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-bold text-slate-300 transition hover:border-amber-400/30 hover:text-amber-300"><Edit3 className="h-3.5 w-3.5" />Edytuj</button>
+                              <button type="button" disabled={deletingId === order.id} onClick={() => void deleteOrder(order.id)} className="inline-flex items-center gap-2 rounded-xl border border-red-400/20 bg-red-400/10 px-3 py-2 text-xs font-bold text-red-200 transition hover:border-red-300/40 hover:bg-red-400/15 disabled:opacity-60"><Trash2 className="h-3.5 w-3.5" />Usuń</button>
+                            </div>
+                          </td>
                         </tr>
                       ))
                     ) : (
                       <tr>
-                        <td colSpan={8} className="py-14 text-center text-sm text-slate-500">
+                        <td colSpan={9} className="py-14 text-center text-sm text-slate-500">
                           Brak zamówień. Dodaj pierwsze zamówienie.
                         </td>
                       </tr>

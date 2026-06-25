@@ -207,3 +207,71 @@ export async function POST(request: Request) {
     );
   }
 }
+
+
+export async function PATCH(request: Request) {
+  const body = (await request.json().catch(() => null)) as (OrderPayload & { id?: unknown }) | null;
+
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    return NextResponse.json({ ok: false, error: "Nieprawidłowy format JSON." }, { status: 400 });
+  }
+
+  const id = cleanString(body.id);
+  if (!id) {
+    return NextResponse.json({ ok: false, error: "Brak identyfikatora zamówienia." }, { status: 400 });
+  }
+
+  const validationErrors = getValidationErrors(body);
+  if (validationErrors.length > 0) {
+    return NextResponse.json({ ok: false, error: validationErrors.join(" ") }, { status: 400 });
+  }
+
+  try {
+    const order = await prisma.order.update({
+      where: { id },
+      data: {
+        orderNumber: cleanString(body.orderNumber),
+        customerName: cleanString(body.customerName),
+        address: cleanString(body.address),
+        city: cleanString(body.city),
+        postalCode: optionalString(body.postalCode),
+        country: cleanString(body.country) || "UK",
+        goodsName: cleanString(body.goodsName),
+        quantity: Number(body.quantity),
+        unit: cleanString(body.unit) || "szt.",
+        pallets: optionalNumber(body.pallets),
+        weightKg: optionalNumber(body.weightKg),
+        notes: optionalString(body.notes),
+      },
+    });
+
+    return NextResponse.json({ ok: true, order });
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      return NextResponse.json({ ok: false, error: "Zamówienie o takim numerze już istnieje." }, { status: 409 });
+    }
+    console.error("Order update failed", error);
+    return NextResponse.json({ ok: false, error: "Nie udało się zaktualizować zamówienia." }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const id = cleanString(searchParams.get("id"));
+
+  if (!id) {
+    return NextResponse.json({ ok: false, error: "Brak identyfikatora zamówienia." }, { status: 400 });
+  }
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      await tx.delivery.deleteMany({ where: { orderId: id } });
+      await tx.order.delete({ where: { id } });
+    });
+
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    console.error("Order deletion failed", error);
+    return NextResponse.json({ ok: false, error: "Nie udało się usunąć zamówienia." }, { status: 500 });
+  }
+}
