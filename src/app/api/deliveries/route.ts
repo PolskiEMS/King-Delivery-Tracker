@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { createAdminEvent } from "@/lib/admin-events";
 
 export const dynamic = "force-dynamic";
 
@@ -25,6 +26,7 @@ export async function PATCH(request: Request) {
   const id = clean(body.id);
   const status = clean(body.status);
   const receiverName = clean(body.receiverName);
+  const actorId = clean(body.actorId) || null;
 
   if (!id) {
     return NextResponse.json({ ok: false, error: "Brak identyfikatora dostawy." }, { status: 400 });
@@ -39,6 +41,7 @@ export async function PATCH(request: Request) {
   }
 
   try {
+    const previousDelivery = await prisma.delivery.findUnique({ where: { id }, select: { status: true, deliveryNumber: true } });
     const delivery = await prisma.delivery.update({
       where: { id },
       data: {
@@ -55,6 +58,17 @@ export async function PATCH(request: Request) {
 
     if (status === "IN_PROGRESS") {
       await prisma.order.update({ where: { id: delivery.orderId }, data: { status: "IN_DELIVERY" } });
+    }
+
+    if (previousDelivery?.status !== status) {
+      await createAdminEvent({
+        type: "DELIVERY_STATUS_CHANGED",
+        title: `Zmieniono status dostawy ${delivery.deliveryNumber}`,
+        description: `Poprzedni status: ${previousDelivery?.status ?? "nieznany"}. Nowy status: ${status}.`,
+        entityType: "Delivery",
+        entityId: delivery.id,
+        actorId,
+      });
     }
 
     return NextResponse.json({ ok: true, delivery });

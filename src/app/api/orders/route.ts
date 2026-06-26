@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { createAdminEvent } from "@/lib/admin-events";
 
 export const dynamic = "force-dynamic";
 
@@ -17,6 +18,9 @@ type OrderPayload = {
   pallets?: unknown;
   weightKg?: unknown;
   notes?: unknown;
+  createdById?: unknown;
+  updatedById?: unknown;
+  actorId?: unknown;
 };
 
 const requiredFields = [
@@ -117,6 +121,7 @@ export async function GET() {
 
   const orders = await prisma.order.findMany({
     orderBy: { createdAt: "desc" },
+    include: { createdBy: true, updatedBy: true },
   });
 
   return NextResponse.json({ ok: true, orders });
@@ -164,6 +169,7 @@ export async function POST(request: Request) {
   const quantity = Number(payload.quantity);
   const pallets = optionalNumber(payload.pallets);
   const weightKg = optionalNumber(payload.weightKg);
+  const actorId = optionalString(payload.actorId) ?? optionalString(payload.createdById);
 
   try {
     const order = await prisma.order.create({
@@ -181,7 +187,18 @@ export async function POST(request: Request) {
         weightKg,
         notes: optionalString(payload.notes),
         status: "NEW",
+        createdById: actorId,
       },
+      include: { createdBy: true, updatedBy: true },
+    });
+
+    await createAdminEvent({
+      type: "ORDER_CREATED",
+      title: `Utworzono zamówienie ${order.orderNumber}`,
+      description: `Zamówienie dla klienta ${order.customerName}.`,
+      entityType: "Order",
+      entityId: order.id,
+      actorId,
     });
 
     return NextResponse.json({ ok: true, order }, { status: 201 });
@@ -226,6 +243,8 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ ok: false, error: validationErrors.join(" ") }, { status: 400 });
   }
 
+  const actorId = optionalString(body.actorId) ?? optionalString(body.updatedById);
+
   try {
     const order = await prisma.order.update({
       where: { id },
@@ -242,7 +261,18 @@ export async function PATCH(request: Request) {
         pallets: optionalNumber(body.pallets),
         weightKg: optionalNumber(body.weightKg),
         notes: optionalString(body.notes),
+        updatedById: actorId,
       },
+      include: { createdBy: true, updatedBy: true },
+    });
+
+    await createAdminEvent({
+      type: "ORDER_UPDATED",
+      title: `Zaktualizowano zamówienie ${order.orderNumber}`,
+      description: `Zmieniono dane zamówienia dla klienta ${order.customerName}.`,
+      entityType: "Order",
+      entityId: order.id,
+      actorId,
     });
 
     return NextResponse.json({ ok: true, order });
@@ -258,6 +288,7 @@ export async function PATCH(request: Request) {
 export async function DELETE(request: Request) {
   const { searchParams } = new URL(request.url);
   const id = cleanString(searchParams.get("id"));
+  const actorId = optionalString(searchParams.get("actorId"));
 
   if (!id) {
     return NextResponse.json({ ok: false, error: "Brak identyfikatora zamówienia." }, { status: 400 });
@@ -267,6 +298,15 @@ export async function DELETE(request: Request) {
     await prisma.$transaction(async (tx) => {
       await tx.delivery.deleteMany({ where: { orderId: id } });
       await tx.order.delete({ where: { id } });
+    });
+
+    await createAdminEvent({
+      type: "ORDER_DELETED",
+      title: "Usunięto zamówienie",
+      description: `Usunięto zamówienie o ID ${id}.`,
+      entityType: "Order",
+      entityId: id,
+      actorId,
     });
 
     return NextResponse.json({ ok: true });
