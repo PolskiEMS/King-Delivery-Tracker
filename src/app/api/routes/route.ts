@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { createAdminEvent } from "@/lib/admin-events";
 
 export const dynamic = "force-dynamic";
 
@@ -11,7 +12,7 @@ function clean(value: unknown) {
 export async function GET() {
   const routes = await prisma.route.findMany({
     orderBy: { createdAt: "desc" },
-    include: { driver: true, vehicle: true, deliveries: { include: { order: true }, orderBy: { sequence: "asc" } } },
+    include: { createdBy: true, updatedBy: true, editableBy: true, driver: true, vehicle: true, deliveries: { include: { order: true }, orderBy: { sequence: "asc" } } },
   });
   return NextResponse.json({ ok: true, routes });
 }
@@ -25,6 +26,7 @@ export async function POST(request: Request) {
 
   const routeNumber = clean(body.routeNumber);
   const name = clean(body.name);
+  const actorId = clean(body.actorId) || null;
   const orderIds = Array.isArray(body.orderIds) ? body.orderIds.filter((id): id is string => typeof id === "string" && id.length > 0) : [];
 
   if (!routeNumber || !name) {
@@ -41,6 +43,8 @@ export async function POST(request: Request) {
           driverId: clean(body.driverId) || null,
           vehicleId: clean(body.vehicleId) || null,
           notes: clean(body.notes) || null,
+          createdById: actorId,
+          editableById: actorId,
         },
       });
 
@@ -62,8 +66,17 @@ export async function POST(request: Request) {
 
       return tx.route.findUniqueOrThrow({
         where: { id: createdRoute.id },
-        include: { driver: true, vehicle: true, deliveries: { include: { order: true }, orderBy: { sequence: "asc" } } },
+        include: { createdBy: true, updatedBy: true, editableBy: true, driver: true, vehicle: true, deliveries: { include: { order: true }, orderBy: { sequence: "asc" } } },
       });
+    });
+
+    await createAdminEvent({
+      type: "ROUTE_CREATED",
+      title: `Utworzono trasę ${route.routeNumber}`,
+      description: `Trasa ${route.name} została utworzona.`,
+      entityType: "Route",
+      entityId: route.id,
+      actorId,
     });
 
     return NextResponse.json({ ok: true, route }, { status: 201 });
@@ -95,7 +108,16 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ ok: false, error: "Pola routeNumber i name są wymagane." }, { status: 400 });
   }
 
+  const actorId = clean(body.actorId) || null;
+
   try {
+    if (actorId) {
+      const existingRoute = await prisma.route.findUnique({ where: { id }, select: { editableById: true } });
+      if (existingRoute?.editableById && existingRoute.editableById !== actorId) {
+        return NextResponse.json({ ok: false, error: "Ten dyspozytor nie może edytować tej trasy." }, { status: 403 });
+      }
+    }
+
     const route = await prisma.route.update({
       where: { id },
       data: {
@@ -105,8 +127,19 @@ export async function PATCH(request: Request) {
         driverId: clean(body.driverId) || null,
         vehicleId: clean(body.vehicleId) || null,
         notes: clean(body.notes) || null,
+        updatedById: actorId,
+        editableById: clean(body.editableById) || undefined,
       },
-      include: { driver: true, vehicle: true, deliveries: { include: { order: true }, orderBy: { sequence: "asc" } } },
+      include: { createdBy: true, updatedBy: true, editableBy: true, driver: true, vehicle: true, deliveries: { include: { order: true }, orderBy: { sequence: "asc" } } },
+    });
+
+    await createAdminEvent({
+      type: "ROUTE_UPDATED",
+      title: `Zaktualizowano trasę ${route.routeNumber}`,
+      description: `Zmieniono dane trasy ${route.name}.`,
+      entityType: "Route",
+      entityId: route.id,
+      actorId,
     });
 
     return NextResponse.json({ ok: true, route });
@@ -123,6 +156,7 @@ export async function PATCH(request: Request) {
 export async function DELETE(request: Request) {
   const { searchParams } = new URL(request.url);
   const id = clean(searchParams.get("id"));
+  const actorId = clean(searchParams.get("actorId")) || null;
 
   if (!id) {
     return NextResponse.json({ ok: false, error: "Brak identyfikatora trasy." }, { status: 400 });
@@ -134,6 +168,15 @@ export async function DELETE(request: Request) {
       await tx.delivery.deleteMany({ where: { routeId: id } });
       await tx.order.updateMany({ where: { id: { in: deliveries.map((delivery) => delivery.orderId) } }, data: { status: "NEW" } });
       await tx.route.delete({ where: { id } });
+    });
+
+    await createAdminEvent({
+      type: "ROUTE_DELETED",
+      title: "Usunięto trasę",
+      description: `Usunięto trasę o ID ${id}.`,
+      entityType: "Route",
+      entityId: id,
+      actorId,
     });
 
     return NextResponse.json({ ok: true });

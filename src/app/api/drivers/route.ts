@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { createAdminEvent } from "@/lib/admin-events";
 
 export const dynamic = "force-dynamic";
 
@@ -8,7 +9,7 @@ function clean(value: unknown) {
 }
 
 export async function GET() {
-  const drivers = await prisma.driver.findMany({ orderBy: { createdAt: "desc" }, include: { routes: true } });
+  const drivers = await prisma.driver.findMany({ orderBy: { createdAt: "desc" }, include: { createdBy: true, updatedBy: true, routes: true } });
   return NextResponse.json({ ok: true, drivers });
 }
 
@@ -21,6 +22,7 @@ export async function POST(request: Request) {
 
   const firstName = clean(body.firstName);
   const lastName = clean(body.lastName);
+  const actorId = clean(body.actorId) || null;
 
   if (!firstName || !lastName) {
     return NextResponse.json({ ok: false, error: "Pola firstName i lastName są wymagane." }, { status: 400 });
@@ -28,7 +30,16 @@ export async function POST(request: Request) {
 
   try {
     const driver = await prisma.driver.create({
-      data: { firstName, lastName, phone: clean(body.phone) || null, active: body.active === false ? false : true },
+      data: { firstName, lastName, phone: clean(body.phone) || null, active: body.active === false ? false : true, createdById: actorId },
+      include: { createdBy: true, updatedBy: true, routes: true },
+    });
+    await createAdminEvent({
+      type: "DRIVER_CREATED",
+      title: `Utworzono kierowcę ${driver.firstName} ${driver.lastName}`,
+      description: "Dodano kierowcę do bazy operacyjnej.",
+      entityType: "Driver",
+      entityId: driver.id,
+      actorId,
     });
     return NextResponse.json({ ok: true, driver }, { status: 201 });
   } catch (error) {
@@ -48,6 +59,7 @@ export async function PATCH(request: Request) {
   const id = clean(body.id);
   const firstName = clean(body.firstName);
   const lastName = clean(body.lastName);
+  const actorId = clean(body.actorId) || null;
 
   if (!id) {
     return NextResponse.json({ ok: false, error: "Brak identyfikatora kierowcy." }, { status: 400 });
@@ -65,7 +77,17 @@ export async function PATCH(request: Request) {
         lastName,
         phone: clean(body.phone) || null,
         active: body.active === false ? false : true,
+        updatedById: actorId,
       },
+      include: { createdBy: true, updatedBy: true, routes: true },
+    });
+    await createAdminEvent({
+      type: "DRIVER_UPDATED",
+      title: `Zaktualizowano kierowcę ${driver.firstName} ${driver.lastName}`,
+      description: "Zmieniono dane kierowcy.",
+      entityType: "Driver",
+      entityId: driver.id,
+      actorId,
     });
     return NextResponse.json({ ok: true, driver });
   } catch (error) {
@@ -78,6 +100,7 @@ export async function PATCH(request: Request) {
 export async function DELETE(request: Request) {
   const { searchParams } = new URL(request.url);
   const id = clean(searchParams.get("id"));
+  const actorId = clean(searchParams.get("actorId")) || null;
 
   if (!id) {
     return NextResponse.json({ ok: false, error: "Brak identyfikatora kierowcy." }, { status: 400 });
@@ -87,6 +110,15 @@ export async function DELETE(request: Request) {
     await prisma.$transaction(async (tx) => {
       await tx.route.updateMany({ where: { driverId: id }, data: { driverId: null } });
       await tx.driver.delete({ where: { id } });
+    });
+
+    await createAdminEvent({
+      type: "DRIVER_DELETED",
+      title: "Usunięto kierowcę",
+      description: `Usunięto kierowcę o ID ${id}.`,
+      entityType: "Driver",
+      entityId: id,
+      actorId,
     });
 
     return NextResponse.json({ ok: true });

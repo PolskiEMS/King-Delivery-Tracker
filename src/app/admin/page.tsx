@@ -15,6 +15,7 @@ import {
   UserCog,
   UserPlus,
   Users,
+  History,
 } from "lucide-react";
 
 type UserRole = "ADMIN" | "DISPATCHER" | "DRIVER";
@@ -28,6 +29,15 @@ type AdminUser = {
   role: UserRole;
   dispatcherStatus: DispatcherStatus;
   createdAt: string;
+};
+
+type AdminEvent = {
+  id: string;
+  type: string;
+  title: string;
+  description: string | null;
+  createdAt: string;
+  actor: { firstName: string; lastName: string; email: string } | null;
 };
 
 type OperationalDriver = {
@@ -127,6 +137,7 @@ const managementLinks = [
 export default function AdminPage() {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [operationalDrivers, setOperationalDrivers] = useState<OperationalDriver[]>([]);
+  const [adminEvents, setAdminEvents] = useState<AdminEvent[]>([]);
   const [form, setForm] = useState<UserForm>(emptyForm);
   const [message, setMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -167,15 +178,18 @@ export default function AdminPage() {
 
   const loadUsers = useCallback(async () => {
     setIsLoading(true);
-    const [usersResponse, driversResponse] = await Promise.all([
+    const [usersResponse, driversResponse, eventsResponse] = await Promise.all([
       fetch("/api/admin/users", { cache: "no-store" }),
       fetch("/api/drivers", { cache: "no-store" }),
+      fetch("/api/admin/events", { cache: "no-store" }),
     ]);
     const usersData = (await usersResponse.json()) as { users?: AdminUser[]; message?: string };
     const driversData = (await driversResponse.json()) as { drivers?: OperationalDriver[]; error?: string };
+    const eventsData = (await eventsResponse.json()) as { events?: AdminEvent[] };
     setUsers(usersData.users ?? []);
     setOperationalDrivers(driversData.drivers ?? []);
-    setMessage(usersResponse.ok && driversResponse.ok ? null : usersData.message ?? driversData.error ?? "Nie udało się pobrać danych panelu admina.");
+    setAdminEvents(eventsData.events ?? []);
+    setMessage(usersResponse.ok && driversResponse.ok && eventsResponse.ok ? null : usersData.message ?? driversData.error ?? "Nie udało się pobrać danych panelu admina.");
     setIsLoading(false);
   }, []);
 
@@ -369,6 +383,35 @@ export default function AdminPage() {
               </div>
             </article>
           </div>
+
+
+          <article className="rounded-2xl border border-white/10 bg-white/[0.04] p-5 shadow-2xl shadow-black/20 backdrop-blur sm:p-6">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-300">Audyt operacji</p>
+                <h2 className="mt-2 flex items-center gap-2 text-xl font-black text-white"><History className="h-5 w-5 text-amber-300" />Ostatnie działania w systemie</h2>
+              </div>
+              <p className="text-sm font-semibold text-slate-500">{adminEvents.length} ostatnich wpisów</p>
+            </div>
+
+            <div className="mt-5 grid gap-3">
+              {adminEvents.length ? adminEvents.map((event) => (
+                <div key={event.id} className="rounded-2xl border border-white/10 bg-[#020813]/50 p-4">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                      <span className="inline-flex rounded-full border border-amber-400/30 bg-amber-400/10 px-3 py-1 text-xs font-bold text-amber-200">{event.type}</span>
+                      <p className="mt-3 font-bold text-white">{event.title}</p>
+                      {event.description && <p className="mt-1 text-sm text-slate-400">{event.description}</p>}
+                    </div>
+                    <div className="text-left text-xs text-slate-500 sm:text-right">
+                      <p className="font-semibold text-slate-300">{event.actor ? `${event.actor.firstName} ${event.actor.lastName}` : "Nieznany użytkownik"}</p>
+                      <p>{new Intl.DateTimeFormat("pl-PL", { dateStyle: "short", timeStyle: "short" }).format(new Date(event.createdAt))}</p>
+                    </div>
+                  </div>
+                </div>
+              )) : <p className="rounded-2xl border border-white/10 bg-[#020813]/60 p-5 text-sm text-slate-400">Brak zarejestrowanych działań.</p>}
+            </div>
+          </article>
 
           <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
             <article className="rounded-2xl border border-white/10 bg-white/[0.04] p-5 shadow-2xl shadow-black/20 backdrop-blur sm:p-6">

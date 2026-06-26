@@ -25,6 +25,11 @@ type OrderStatus =
   | "PROBLEM"
   | "CANCELLED";
 
+type OrderUser = {
+  firstName: string;
+  lastName: string;
+};
+
 type Order = {
   id: string;
   orderNumber: string;
@@ -42,6 +47,7 @@ type Order = {
   status: OrderStatus;
   createdAt: string;
   updatedAt: string;
+  createdBy: OrderUser | null;
 };
 
 type OrderFormState = {
@@ -491,8 +497,11 @@ export default function DispatcherOrdersPage() {
                     ) : orders.length > 0 ? (
                       orders.map((order) => (
                         <tr key={order.id} className="align-top">
-                          <td className="py-4 font-semibold text-white">
-                            {order.orderNumber}
+                          <td className="py-4">
+                            <p className="font-semibold text-white">{order.orderNumber}</p>
+                            <span className="mt-2 inline-flex rounded-full border border-slate-500/20 bg-slate-500/10 px-2.5 py-1 text-[11px] font-semibold text-slate-300">
+                              Utworzył: {order.createdBy ? `${order.createdBy.firstName} ${order.createdBy.lastName}` : "nieznany"}
+                            </span>
                           </td>
                           <td className="py-4">{order.customerName}</td>
                           <td className="py-4">{order.city}</td>

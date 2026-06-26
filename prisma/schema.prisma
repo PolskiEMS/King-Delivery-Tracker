@@ -46,26 +46,55 @@ enum RouteStatus {
   CANCELLED
 }
 
+enum AdminEventType {
+  ORDER_CREATED
+  ORDER_UPDATED
+  ORDER_DELETED
+  ROUTE_CREATED
+  ROUTE_UPDATED
+  ROUTE_DELETED
+  DRIVER_CREATED
+  DRIVER_UPDATED
+  DRIVER_DELETED
+  DELIVERY_STATUS_CHANGED
+}
+
 model User {
-  id            String   @id @default(cuid())
-  email         String   @unique
-  passwordHash  String
-  firstName     String
-  lastName      String
-  role          UserRole
+  id               String           @id @default(cuid())
+  email            String           @unique
+  passwordHash     String
+  firstName        String
+  lastName         String
+  role             UserRole
   dispatcherStatus DispatcherStatus @default(OFFLINE)
-  createdAt     DateTime @default(now())
+  createdAt        DateTime         @default(now())
+
+  createdOrders  Order[]      @relation("OrdersCreatedBy")
+  updatedOrders  Order[]      @relation("OrdersUpdatedBy")
+  createdRoutes  Route[]      @relation("RoutesCreatedBy")
+  updatedRoutes  Route[]      @relation("RoutesUpdatedBy")
+  editableRoutes Route[]      @relation("RoutesEditableBy")
+  createdDrivers Driver[]     @relation("DriversCreatedBy")
+  updatedDrivers Driver[]     @relation("DriversUpdatedBy")
+  adminEvents    AdminEvent[] @relation("AdminEventsActor")
 }
 
 model Driver {
-  id        String   @id @default(cuid())
-  firstName String
-  lastName  String
-  phone     String?
-  active    Boolean  @default(true)
-  createdAt DateTime @default(now())
+  id          String   @id @default(cuid())
+  firstName   String
+  lastName    String
+  phone       String?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  createdById String?
+  createdBy   User?    @relation("DriversCreatedBy", fields: [createdById], references: [id])
+  updatedById String?
+  updatedBy   User?    @relation("DriversUpdatedBy", fields: [updatedById], references: [id])
 
-  routes    Route[]
+  routes Route[]
+
+  @@index([createdById])
+  @@index([updatedById])
 }
 
 model Vehicle {
@@ -76,7 +105,7 @@ model Vehicle {
   pallets      Int?
   createdAt    DateTime @default(now())
 
-  routes       Route[]
+  routes Route[]
 }
 
 model Order {
@@ -96,48 +125,79 @@ model Order {
   status       OrderStatus @default(NEW)
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
+  createdById  String?
+  createdBy    User?       @relation("OrdersCreatedBy", fields: [createdById], references: [id])
+  updatedById  String?
+  updatedBy    User?       @relation("OrdersUpdatedBy", fields: [updatedById], references: [id])
 
-  delivery     Delivery?
+  delivery Delivery?
 
   @@index([createdAt])
+  @@index([createdById])
+  @@index([updatedById])
 }
 
 model Route {
-  id          String      @id @default(cuid())
-  routeNumber String      @unique
-  name        String
-  plannedDate DateTime?
-  status      RouteStatus @default(PLANNED)
-  notes       String?
-  driverId    String?
-  vehicleId   String?
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  id           String      @id @default(cuid())
+  routeNumber  String      @unique
+  name         String
+  plannedDate  DateTime?
+  status       RouteStatus @default(PLANNED)
+  notes        String?
+  driverId     String?
+  vehicleId    String?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  createdById  String?
+  createdBy    User?       @relation("RoutesCreatedBy", fields: [createdById], references: [id])
+  updatedById  String?
+  updatedBy    User?       @relation("RoutesUpdatedBy", fields: [updatedById], references: [id])
+  editableById String?
+  editableBy   User?       @relation("RoutesEditableBy", fields: [editableById], references: [id])
 
-  driver      Driver?     @relation(fields: [driverId], references: [id])
-  vehicle     Vehicle?    @relation(fields: [vehicleId], references: [id])
-  deliveries  Delivery[]
+  driver     Driver?    @relation(fields: [driverId], references: [id])
+  vehicle    Vehicle?   @relation(fields: [vehicleId], references: [id])
+  deliveries Delivery[]
 
   @@index([createdAt])
   @@index([driverId])
   @@index([vehicleId])
+  @@index([createdById])
+  @@index([updatedById])
+  @@index([editableById])
 }
 
 model Delivery {
-  id          String         @id @default(cuid())
-  deliveryNumber String     @unique
-  orderId     String         @unique
-  routeId     String?
-  sequence    Int?
-  status      DeliveryStatus @default(PENDING)
-  deliveredAt DateTime?
-  problemNote String?
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
+  id             String         @id @default(cuid())
+  deliveryNumber String         @unique
+  orderId        String         @unique
+  routeId        String?
+  sequence       Int?
+  status         DeliveryStatus @default(PENDING)
+  deliveredAt    DateTime?
+  problemNote    String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
 
-  order       Order          @relation(fields: [orderId], references: [id])
-  route       Route?         @relation(fields: [routeId], references: [id])
+  order Order  @relation(fields: [orderId], references: [id])
+  route Route? @relation(fields: [routeId], references: [id])
 
   @@index([createdAt])
   @@index([routeId])
+}
+
+model AdminEvent {
+  id          String         @id @default(cuid())
+  type        AdminEventType
+  title       String
+  description String?
+  entityType  String?
+  entityId    String?
+  actorId     String?
+  actor       User?          @relation("AdminEventsActor", fields: [actorId], references: [id])
+  createdAt   DateTime       @default(now())
+
+  @@index([createdAt])
+  @@index([actorId])
+  @@index([type])
 }
