@@ -1,13 +1,16 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
+import {
+  createSessionToken,
+  getRoleHome,
+  SESSION_COOKIE_NAME,
+  SESSION_TTL_SECONDS,
+  type SessionRole,
+} from "@/lib/session-token";
 
-function getRedirectByRole(role: string) {
-  if (role === "ADMIN") return "/admin";
-  if (role === "DISPATCHER") return "/dispatcher";
-  if (role === "DRIVER") return "/driver";
-
-  return "/";
+function isSessionRole(role: string): role is SessionRole {
+  return role === "ADMIN" || role === "DISPATCHER" || role === "DRIVER";
 }
 
 export async function POST(request: Request) {
@@ -17,37 +20,34 @@ export async function POST(request: Request) {
     const password = String(body.password || "");
 
     if (!email || !password) {
-      return NextResponse.json(
-        { ok: false, message: "Podaj email i hasło." },
-        { status: 400 }
-      );
+      return NextResponse.json({ ok: false, message: "Podaj email i hasło." }, { status: 400 });
     }
 
     const user = await prisma.user.findUnique({
       where: { email },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        passwordHash: true,
+        role: true,
+      },
     });
 
-    if (!user) {
+    const passwordValid = user ? await bcrypt.compare(password, user.passwordHash) : false;
+
+    if (!user || !passwordValid || !isSessionRole(user.role)) {
       return NextResponse.json(
         { ok: false, message: "Nieprawidłowy email lub hasło." },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
-    const passwordValid = await bcrypt.compare(password, user.passwordHash);
-
-    if (!passwordValid) {
-      return NextResponse.json(
-        { ok: false, message: "Nieprawidłowy email lub hasło." },
-        { status: 401 }
-      );
-    }
-
-    const redirectTo = getRedirectByRole(user.role);
-
-    return NextResponse.json({
+    const token = await createSessionToken(user.id, user.role);
+    const response = NextResponse.json({
       ok: true,
-      redirectTo,
+      redirectTo: getRoleHome(user.role),
       user: {
         id: user.id,
         email: user.email,
@@ -56,16 +56,22 @@ export async function POST(request: Request) {
         role: user.role,
       },
     });
+
+    response.cookies.set(SESSION_COOKIE_NAME, token, {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      path: "/",
+      maxAge: SESSION_TTL_SECONDS,
+    });
+    response.headers.set("cache-control", "no-store");
+
+    return response;
   } catch (error) {
     console.error("LOGIN_ERROR:", error);
-
     return NextResponse.json(
-      {
-        ok: false,
-        message: "Wystąpił błąd logowania.",
-        error: error instanceof Error ? error.message : "Unknown error",
-      },
-      { status: 500 }
+      { ok: false, message: "Wystąpił błąd logowania." },
+      { status: 500 },
     );
   }
 }
